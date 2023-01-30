@@ -5,23 +5,30 @@ use std::thread;
 use crossbeam_channel::unbounded;
 use gfaR_wrapper::NPath;
 use hashbrown::HashMap;
+use itertools::interleave;
+use log::info;
 use crate::helper::mean;
 
 
-/// Wrapper function for traversal stuff
-/// Writing bed and bubble stats at the same time
+/// Wrapper function for traversal and bubble output files
+///
+/// Writing two files at the same time
 ///
 /// Comment:
-/// - Sending data is not needed
-pub fn write_wrapper(data:  Vec<Vec<(usize, u32, u32, u32)>>, index: HashMap<String, Vec<usize>>, paths: Vec<NPath>, filename_prefix: &str) {
+/// - Sending data is not needed (maybe replace later)
+pub fn write_wrapper(data:  Vec<Vec<(usize, u32, u32, u32)>>, index2pos: HashMap<String, Vec<usize>>, paths: Vec<NPath>, filename_prefix: &str, bubbles: Vec<(u32, u32)>) {
+    // Create the two files
     let file1 = Arc::new(Mutex::new(BufWriter::new(File::create(filename_prefix.to_owned() + ".bed").unwrap())));
     let file2 = Arc::new(Mutex::new(BufWriter::new(File::create(filename_prefix.to_owned() + ".stats").unwrap())));
-    //Create a buffer with a size of 8 bytes
 
-    let arc_index = Arc::new(index);
+
+    // Additional references
+    let arc_index = Arc::new(index2pos);
     let arc_paths = Arc::new(paths);
     let data_len = data.len().clone();
+    let arc_bubbles = Arc::new(bubbles);
 
+    // Do it like this
     let (send, rev) = unbounded();
 
     for x in data.into_iter(){
@@ -30,11 +37,12 @@ pub fn write_wrapper(data:  Vec<Vec<(usize, u32, u32, u32)>>, index: HashMap<Str
         let arc_paths_v2 = arc_paths.clone();
         let arc_file1_v2 = file1.clone();
         let arc_file2_v2 = file2.clone();
+        let arc_bubbles = arc_bubbles.clone();
 
 
         thread::spawn(move || {
             let ff = x.len().clone();
-            traversal_stats(x, arc_index_v2, arc_paths_v2, arc_file1_v2, arc_file2_v2);
+            traversal_stats(x, arc_index_v2, arc_paths_v2, arc_file1_v2, arc_file2_v2, arc_bubbles);
             send_clone.send(format!("1 {}", ff)).unwrap();
         });
     }
@@ -47,18 +55,20 @@ pub fn write_wrapper(data:  Vec<Vec<(usize, u32, u32, u32)>>, index: HashMap<Str
     }
 }
 
-/// Writer functions
+/// The actual writer function
+/// TODO
+/// - Add bubbles here
 ///
-/// Returns [min, max, len, counts, mean] written in a file
-pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<String, Vec<usize>>>, paths: Arc<Vec<NPath>>, d: Arc<Mutex<BufWriter<File>>>,  d2: Arc<Mutex<BufWriter<File>>>) {
-
+/// Writes [min, max, mean, interval_count, traversal count] in a bubble stats file (missing bubble start and end)
+/// Writes accession_name, start, end, interval and bubble number in a bed file.
+pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<String, Vec<usize>>>, paths: Arc<Vec<NPath>>, d: Arc<Mutex<BufWriter<File>>>,  d2: Arc<Mutex<BufWriter<File>>>, bubbles: Arc<Vec<(u32, u32)>>) {
     // Initialize variables
     let mut traversal:  Vec<(&[u32], &[bool])> = Vec::new();
-    let mut old_bub = data[0].3;
     let mut tmp_data: Vec<(usize, u32, u32, u32)> = Vec::new();
     let mut interval_size: Vec<(usize, u32, usize, usize)> = Vec::new();
     let mut interval_number = 0;
     let mut sizes: Vec<usize> = Vec::new();
+    let mut old_bub = data[0].3.clone();
 
 
 
@@ -69,14 +79,15 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
 
         if interval.3 != old_bub {
             traversal = Vec::new();
+            let bubble = bubbles.get(old_bub as usize).unwrap();
+
             old_bub = interval.3;
 
             let _soo = tmp_data.len().clone();
             let mut dd = d.lock().unwrap();
             let mut dd2 = d2.lock().unwrap();
-
             // What is missing? bubble_id, start, end, #subbubbles, parents, ratio?, type
-            write!(dd2, "{}\t{}\t{}\t{}\t{}\t\n", sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), _soo, interval_number as usize, mean(&sizes) ).expect("help");
+            write!(dd2, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t\n", bubble.0, bubble.1, sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), _soo, interval_number as usize, mean(&sizes) ).expect("help");
 
             for (_x1, _x2) in tmp_data.into_iter().zip(interval_size.iter()){
                 write!(dd, "{}\t{}\t{}\tb{}\tt{}\n", paths.get(_x1.0).unwrap().name, _x2.2, _x2.3 , _x1.3, _x2.0).expect("help");
@@ -120,8 +131,9 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
     let mut dd2 = d2.lock().unwrap();
 
     let soo = tmp_data.len().clone();
+    let bubble = bubbles.get(tmp_data.first().unwrap().3 as usize).unwrap();
 
-    write!(dd2, "{}\t{}\t{}\t{}\t{}\t\n", sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), soo, interval_number as usize, mean(&sizes) ).expect("helpa");
+    write!(dd2, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t\n", bubble.0, bubble.1, sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), soo, interval_number as usize, mean(&sizes) ).expect("helpa");
 
     for (x1, x2) in tmp_data.into_iter().zip(interval_size.iter()){
         write!(dd, "{}\t{}\t{}\t{}\t{}\n", paths.get(x1.0).unwrap().name, x2.2, x2.3 , x1.3, x2.0).expect("heda");

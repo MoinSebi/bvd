@@ -11,7 +11,7 @@ use std::path::Path;
 use std::process;
 use gfaR_wrapper::{NGfa};
 use log::{ info, warn};
-use crate::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem, bvd_low_memory};
+use crate::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
 use crate::graph_helper::{graph2pos, index_faster};
 use crate::helper::chunk_by_index;
 use crate::logging::newbuilder;
@@ -115,7 +115,7 @@ fn main() {
     // Bifurcation functions
     info!("Index graph");
     let mut intervals: Vec<(usize, u32, u32, u32)> = Vec::new();
-    let mut bubbles: Vec<(u32, u32)> = Vec::new();
+    let mut bubbles: Vec<(u32, u32)> = vec![];
     if matches.is_present("low-memory"){
         info!("Running in low mem mode");
         (intervals, bubbles) = bifurcation_bubble_lowmem(&graph, &threads);
@@ -128,10 +128,10 @@ fn main() {
     // Lets write bubble and other file at the same time
     info!("Number of intervals {}", intervals.len().clone());
     info!("Number of bubbles {}", bubbles.len());
-    let chunks =  chunk_by_index(intervals, bubbles.len() as u32, threads as u32);info!("Statistics and writing output");
+    let chunks =  chunk_by_index(intervals, bubbles.len().clone() as u32, threads as u32);info!("Statistics and writing output");
 
     // Write output
-    write_wrapper(chunks, g2p, paths, out_prefix);
+    write_wrapper(chunks, g2p, paths, out_prefix, bubbles);
 
     info!("Done");
 
