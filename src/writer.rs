@@ -66,7 +66,7 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
     let mut traversal:  Vec<(&[u32], &[bool])> = Vec::new();
     let mut tmp_data: Vec<(usize, u32, u32, u32)> = Vec::new();
     let mut interval_size: Vec<(usize, u32, usize, usize)> = Vec::new();
-    let mut interval_number = 0;
+    let mut traversal_number = 0;
     let mut sizes: Vec<usize> = Vec::new();
     let mut old_bub = data[0].3.clone();
 
@@ -87,7 +87,7 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
             let mut dd = d.lock().unwrap();
             let mut dd2 = d2.lock().unwrap();
             // What is missing? bubble_id, start, end, #subbubbles, parents, ratio?, type
-            write!(dd2, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t\n", bubble.0, bubble.1, sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), _soo, interval_number as usize, mean(&sizes) ).expect("help");
+            write!(dd2, "{}\t{}\t{}\t{}\t{}\t{}\t{}\n", bubble.0, bubble.1, sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), mean(&sizes), traversal_number as usize, tmp_data.len().clone()).expect("helpa");
 
             for (_x1, _x2) in tmp_data.into_iter().zip(interval_size.iter()){
                 write!(dd, "{}\t{}\t{}\tb{}\tt{}\n", paths.get(_x1.0).unwrap().name, _x2.2, _x2.3 , _x1.3, _x2.0).expect("help");
@@ -96,7 +96,7 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
             sizes = Vec::new();
             tmp_data = Vec::new();
             interval_size = Vec::new();
-            interval_number = 0;
+            traversal_number = 0;
         }
 
 
@@ -106,10 +106,10 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
         let k2 = &p.dir[(interval.1 + 1) as usize..interval.2 as usize];
         let k10: (&[u32], &[bool]) = (k, k2);
         if traversal.contains(&k10) {
-            interval_number = traversal.iter().position(|r| *r == k10).unwrap();
+            traversal_number = traversal.iter().position(|r| *r == k10).unwrap();
         } else {
             traversal.push(k10);
-            interval_number += 1;
+            traversal_number += 1;
         }
 
 
@@ -122,7 +122,7 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
         tmp_data.push(interval);
         sizes.push(to_id-from_id);
 
-        interval_size.push((interval_number, (to_id-from_id) as u32, from_id, to_id));
+        interval_size.push((traversal_number, (to_id-from_id) as u32, from_id, to_id));
 
     }
 
@@ -133,7 +133,7 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
     let soo = tmp_data.len().clone();
     let bubble = bubbles.get(tmp_data.first().unwrap().3 as usize).unwrap();
 
-    write!(dd2, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t\n", bubble.0, bubble.1, sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), soo, interval_number as usize, mean(&sizes) ).expect("helpa");
+    write!(dd2, "{}\t{}\t{}\t{}\t{}\t{}\t{}\n", bubble.0, bubble.1, sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), mean(&sizes), traversal_number as usize, tmp_data.len().clone()).expect("helpa");
 
     for (x1, x2) in tmp_data.into_iter().zip(interval_size.iter()){
         write!(dd, "{}\t{}\t{}\t{}\t{}\n", paths.get(x1.0).unwrap().name, x2.2, x2.3 , x1.3, x2.0).expect("heda");
