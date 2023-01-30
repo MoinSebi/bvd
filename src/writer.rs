@@ -81,13 +81,12 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
             traversal = Vec::new();
             let bubble = bubbles.get(old_bub as usize).unwrap();
 
-            old_bub = interval.3;
 
             let _soo = tmp_data.len().clone();
             let mut dd = d.lock().unwrap();
             let mut dd2 = d2.lock().unwrap();
             // What is missing? bubble_id, start, end, #subbubbles, parents, ratio?, type
-            write!(dd2, "{}\t{}\t{}\t{}\t{}\t{}\t{}\n", bubble.0, bubble.1, sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), mean(&sizes), traversal_number as usize, tmp_data.len().clone()).expect("helpa");
+            write!(dd2, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n", old_bub, bubble.0, bubble.1, sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), mean(&sizes), traversal_number as usize, tmp_data.len().clone()).expect("helpa");
 
             for (_x1, _x2) in tmp_data.into_iter().zip(interval_size.iter()){
                 write!(dd, "{}\t{}\t{}\tb{}\tt{}\n", paths.get(_x1.0).unwrap().name, _x2.2, _x2.3 , _x1.3, _x2.0).expect("help");
@@ -97,6 +96,8 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
             tmp_data = Vec::new();
             interval_size = Vec::new();
             traversal_number = 0;
+            old_bub = interval.3;
+
         }
 
 
@@ -131,9 +132,10 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
     let mut dd2 = d2.lock().unwrap();
 
     let soo = tmp_data.len().clone();
-    let bubble = bubbles.get(tmp_data.first().unwrap().3 as usize).unwrap();
+    let g = tmp_data.first().unwrap().3;
+    let bubble = bubbles.get(g as usize).unwrap();
 
-    write!(dd2, "{}\t{}\t{}\t{}\t{}\t{}\t{}\n", bubble.0, bubble.1, sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), mean(&sizes), traversal_number as usize, tmp_data.len().clone()).expect("helpa");
+    write!(dd2, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n", g, bubble.0, bubble.1, sizes.iter().min().unwrap().clone(), sizes.iter().max().unwrap().clone(), mean(&sizes), traversal_number as usize, tmp_data.len().clone()).expect("helpa");
 
     for (x1, x2) in tmp_data.into_iter().zip(interval_size.iter()){
         write!(dd, "{}\t{}\t{}\t{}\t{}\n", paths.get(x1.0).unwrap().name, x2.2, x2.3 , x1.3, x2.0).expect("heda");
