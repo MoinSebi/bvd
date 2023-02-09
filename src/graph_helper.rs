@@ -52,7 +52,7 @@ pub fn index_faster(paths: &Vec<NPath>, threads: &usize) -> (Vec<HashMap<u32, Ve
     //let mut res2 = Vec::new();
     for _x in 0..paths.len(){
         let data = r.recv().unwrap();
-        res.push((data.0, data.1.1));
+        res.push((data));
         //res2.push((data.0, data.1.0))
     }
     res.sort_by_key(|a| a.0);
@@ -60,5 +60,5 @@ pub fn index_faster(paths: &Vec<NPath>, threads: &usize) -> (Vec<HashMap<u32, Ve
     let res1 = res.into_iter().map(|a| a.1).collect();
     //let res3 = res2.into_iter().map(|a| a.1).collect();
 
-    return (res1)
+    return res1
 }

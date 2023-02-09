@@ -27,10 +27,9 @@ pub fn get_all_pairs<T>(vector: &Vec<T>) -> Vec<(T,T)>
 /// Returns:
 /// - Hashset of all nodes in a path
 /// - Hashmap of all {nodes -> vec<index>})
-pub fn path2index_hashmap(path1: &NPath) -> (HashSet<u32>, HashMap<u32, Vec<u32>>){
-    let node_hashset: HashSet<u32> = path2hashset(path1);
+pub fn path2index_hashmap(path1: &NPath) -> HashMap<u32, Vec<u32>>{
     let node2index = node2index(path1);
-    return (node_hashset, node2index)
+    return node2index
 }
 
 
