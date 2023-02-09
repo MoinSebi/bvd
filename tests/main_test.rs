@@ -15,13 +15,13 @@ fn main_solo() -> Result<(), Box<dyn std::error::Error>> {
     fs::create_dir_all("./data/example_data/test1")?;
     cmd
         .arg("--gfa")
-        .arg("/home/svorbrugg/code/bvd/data/example_data/testGraph.gfa")
+        .arg("data/example_data/testGraph.gfa")
         .arg("-o")
-        .arg("./data/example_data/test1/test1");
+        .arg("data/example_data/test1/test1");
 
     cmd.assert().success();
-    let foo: String = fs::read_to_string("data/example_data/test1/test1.bubble.stats").unwrap();
-    assert_eq!(foo.contains("2	11	26"), true);
+    let foo: String = fs::read_to_string("data/example_data/test1/test1.stats").unwrap();
+    assert_eq!(foo.contains("2	2	9"), true);
 
     let path = "data/example_data/test1";
     //fs::remove_dir_all(path).unwrap();
