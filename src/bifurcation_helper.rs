@@ -2,6 +2,7 @@ use std::cmp::{max, min};
 use gfaR_wrapper::{NPath};
 use std::collections::{HashSet};
 use hashbrown::HashMap;
+use crate::graph_helper::index_faster;
 
 /// **Get all pairs of a vector**
 ///
@@ -27,8 +28,8 @@ pub fn get_all_pairs<T>(vector: &Vec<T>) -> Vec<(T,T)>
 /// Returns:
 /// - Hashset of all nodes in a path
 /// - Hashmap of all {nodes -> vec<index>})
-pub fn path2index_hashmap(path1: &NPath) -> HashMap<u32, Vec<u32>>{
-    let node2index = node2index(path1);
+pub fn path2index_hashmap(path1: &NPath) -> Vec<Vec<u32>>{
+    let node2index = index_of_values123(&path1.nodes);
     return node2index
 }
 
@@ -64,17 +65,56 @@ pub fn node2index(path: &NPath) -> HashMap<u32, Vec<u32>>{
     return index
 }
 
+pub fn test1(jo21: &HashMap<u32, Vec<u32>>) -> Vec<Vec<u32>>{
+    let mut m = jo21.keys().max().unwrap();
+    let mut f: Vec<Vec<u32>> = Vec::new();
+    f.resize(*m as usize + 1, vec![]);
+    for (k,v) in jo21.iter(){
+        f[*k as usize] =  v.clone();
+    }
+    f
+}
+
+fn index_of_values123(vec: &Vec<u32>) -> Vec<Vec<u32>> {
+    let mut f = Vec::new();
+    let mut m: &u32 = &0;
+    for (i, x) in vec.iter().enumerate(){
+        f.push((x,i));
+        if x > m{
+            m = x;
+        }
+    }
+    f.sort();
+    let mut old = f[0].0;
+    let mut tmp = Vec::new();
+    let mut ff = vec![vec![]; *m as usize + 1];
+    for x in f.iter(){
+        if x.0 != old{
+            ff[*old as usize] = tmp;
+            old = x.0;
+            tmp = vec![x.1 as u32]
+        } else{
+            tmp.push(x.1 as u32);
+        }
+    }
+
+    ff
+
+}
+
 
 
 
 /// Get all positions [x1, x2] of the same shared nodes
-pub fn get_shared_index(jo11: &Vec<u32>, jo12: &Vec<u32>, jo21: &HashMap<u32, Vec<u32>>, jo22: &HashMap<u32, Vec<u32>>) -> Vec<[u32; 3]> {
+pub fn get_shared_index(jo11: &Vec<u32>, jo12: &Vec<u32>, jo21: &Vec<Vec<u32>>, jo22: &Vec<Vec<u32>>) -> Vec<[u32; 3]> {
 
     let shared_nodes: Vec<u32> = vec_intersection(jo11, jo12);
     let mut result = Vec::new();
+
     for x in shared_nodes.iter(){
-        let k = jo21.get(x).unwrap();
-        let k2 = jo22.get(x).unwrap();
+        let k = jo21.get(*x as usize).unwrap();
+        let k2 = jo22.get(*x as usize).unwrap();
+        //println!("{:?} {:?} {:?}", k, k2, x);
         if (k.len() > 1) | (k2.len() > 1){
             result.extend(all_combinations2(k, k2, &(*x as u32)))
         } else {
@@ -119,7 +159,7 @@ pub fn get_shared_index_low_mem(path1: &NPath, path2: &NPath) -> Vec<[u32; 3]> {
 pub fn all_combinations2<T>(a: & Vec<T>, b: & Vec<T>, node_id: &T) -> Vec<[T; 3]>
     where T: Clone{
     {
-        let mut p = Vec::new();
+        let mut p = Vec::with_capacity(a.len() * b.len());
         for x in a.iter(){
             for y in b.iter(){
                 p.push([x.clone(),y.clone(), node_id.clone()])
@@ -185,7 +225,7 @@ pub fn vec_intersection(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
             j += 1;
         }
     }
-
+    result.pop();
     result
 }
 

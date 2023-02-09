@@ -17,12 +17,12 @@ use crate::helper::chunk_inplace;
 /// Returns
 /// - Vector of all bubbles (u32, u32) - (start, end)
 /// - VEctor of all intervals (usize, u32, u32, u32) - (pindex, index1, index2, bubble_id)
-pub fn bifurcation_bubble(graph: &NGfa, threads: &usize, jo2: Vec<HashMap<u32, Vec<u32>>>) -> (Vec<(usize, u32, u32, u32)>, Vec<(u32, u32)>){
+pub fn bifurcation_bubble(graph: &NGfa, threads: &usize, jo2: Vec<Vec<Vec<u32>>>) -> (Vec<(usize, u32, u32, u32)>, Vec<(u32, u32)>){
     info!("Running bifurcation analysis");
     let mut result;
     // This returns all bubbles
     info!("test1");
-    result = bvd2(graph, threads.clone(), jo2);
+    result = bvd2(graph, threads.clone(), jo2.clone());
     info!("dsakjdasksd");
     result.sort_by_key(|a|a.0);
 
@@ -47,14 +47,11 @@ pub fn bifurcation_bubble(graph: &NGfa, threads: &usize, jo2: Vec<HashMap<u32, V
                 let path2index = node2index(paa);
                 let mut test = Vec::new();
                 for (i, (start, end)) in ff1.iter().enumerate(){
-                    if path2index.contains_key(&(*start as u32)) && path2index.contains_key(&(*end as u32)){
-                        if start != end{
+                    if path2index.contains_key(&(*start as u32)) && path2index.contains_key(&(*end as u32)) {
+                        if start != end {
                             test.extend(all_combinations(path2index.get(&(*start as u32)).unwrap(), path2index.get(&(*end as u32)).unwrap(), &(*y as u32), &(i as u32)));
-
-
                         } else {
                             test.extend(all_combinations_self(path2index.get(&(*start as u32)).unwrap(), &(*y as u32), &(i as u32)));
-
                         }
                     }
                 }
@@ -150,7 +147,7 @@ pub fn bifurcation_bubble_lowmem(graph: &NGfa, threads: &usize) -> (Vec<(usize, 
 /// - Return (Name1, Name2) -> Vec<[[<start, stop>] (name1), [start, stop] (name2)]
 /// TODO:
 /// - Make outcome clear
-pub fn bvd2(graph: &NGfa, threads: usize, jo2: Vec<HashMap<u32, Vec<u32>>>) -> Vec<(u32, u32)>{
+pub fn bvd2(graph: &NGfa, threads: usize, jo2: Vec<Vec<Vec<u32>>>) -> Vec<(u32, u32)>{
     let (s, r) = unbounded();
 
     // Get all pairs of paths - (n*n-1)/2
@@ -186,11 +183,8 @@ pub fn bvd2(graph: &NGfa, threads: usize, jo2: Vec<HashMap<u32, Vec<u32>>>) -> V
                 //let p2 = test1.get(pair2.1).unwrap();
                 let p3 = test2.get(pair2.0).unwrap();
                 let p4 = test2.get(pair2.1).unwrap();
-                info!("dsakdja");
                 let shared_index = get_shared_index(&agraph.paths.get(pair2.0).unwrap().nodes, &agraph.paths.get(pair2.1).unwrap().nodes, p3, p4);
-                info!("dsakldjska");
                 let result = bifurcation_analysis_meta(&shared_index);
-                info!("dddd");
                 //let result = Vec::new();
                 let f: HashSet<(u32, u32)> = HashSet::from_iter(result.iter().cloned());
                 s1.send(f).expect("Help");
