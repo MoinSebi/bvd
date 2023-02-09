@@ -69,9 +69,9 @@ pub fn node2index(path: &NPath) -> HashMap<u32, Vec<u32>>{
 
 
 /// Get all positions [x1, x2] of the same shared nodes
-pub fn get_shared_index(jo11: &HashSet<u32>, jo12: &HashSet<u32>, jo21: &HashMap<u32, Vec<u32>>, jo22: &HashMap<u32, Vec<u32>>) -> Vec<[u32; 3]> {
+pub fn get_shared_index(jo11: &Vec<u32>, jo12: &Vec<u32>, jo21: &HashMap<u32, Vec<u32>>, jo22: &HashMap<u32, Vec<u32>>) -> Vec<[u32; 3]> {
 
-    let shared_nodes: HashSet<u32> = jo11.intersection(&jo12).cloned().collect();
+    let shared_nodes: Vec<u32> = vec_intersection(jo11, jo12);
     let mut result = Vec::new();
     for x in shared_nodes.iter(){
         let k = jo21.get(x).unwrap();
@@ -90,15 +90,17 @@ pub fn get_shared_index(jo11: &HashSet<u32>, jo12: &HashSet<u32>, jo21: &HashMap
 
 /// Get all positions [x1, x2] of the same shared nodes
 pub fn get_shared_index_low_mem(path1: &NPath, path2: &NPath) -> Vec<[u32; 3]> {
-    let node_hashset: HashSet<u32> = path2hashset(path1);
-    let node_hashset2: HashSet<u32> = path2hashset(path2);
+    //let node_hashset: HashSet<u32> = path2hashset(path1);
+    //let node_hashset2: HashSet<u32> = path2hashset(path2);
 
-    let shared_nodes: HashSet<u32> = node_hashset.intersection(&node_hashset2).cloned().collect();
+    //let shared_nodes: HashSet<u32> = node_hashset.intersection(&node_hashset2).cloned().collect();
+
+    let f = vec_intersection(&path1.nodes, &path2.nodes);
     let node2i = node2index(path1);
     let node2i2 = node2index(path2);
 
     let mut result = Vec::new();
-    for x in shared_nodes.iter(){
+    for x in f.iter(){
         let k = node2i.get(x).unwrap();
         let k2 = node2i2.get(x).unwrap();
         if (k.len() > 1) | (k2.len() > 1){
@@ -160,7 +162,49 @@ pub fn all_combinations<T>(a: & Vec<T>, b: & Vec<T>, path: &u32, bubble_id2: &u3
 }
 
 
+/// Intersection of two vectors
+pub fn vec_intersection(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
+    let mut a2 = a.clone();
+    let mut b2 = b.clone();
+    a2.sort();
+    b2.sort();
+    let mut result = vec![];
+    let mut i = 0;
+    let mut j = 0;
+    let mut old = 0;
+    while i < a2.len() && j < b2.len() {
+        if a2[i] < b2[j] {
+            i += 1;
+        } else if a2[i] > b2[j] {
+            j += 1;
+        } else {
+            if a2[i] != old {
+                result.push(a2[i]);
+                old = a2[i]
+            }
+            i += 1;
+            j += 1;
+        }
+    }
 
+    result
+}
+
+
+#[cfg(test)]
+mod tests {
+    use log::info;
+    use crate::bifurcation_helper::vec_intersection;
+
+    #[test]
+    fn vec_intersection_test() {
+        let vec1 = vec![1,2,3,4,5,1];
+        let vec2 = vec![1,6,7,8,98,1];
+        let vec_intersection = vec_intersection(&vec1, &vec2);
+        //eprint!("dasdad {:?}", vec_intersection);
+        assert_eq!(vec_intersection.len(), 1);
+    }
+}
 
 
 

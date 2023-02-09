@@ -120,8 +120,8 @@ fn main() {
         info!("Running in low mem mode");
         (intervals, bubbles) = bifurcation_bubble_lowmem(&graph, &threads);
     } else {
-        let (node_hashset, node_path_index) = index_faster(&graph.paths, &threads);
-        (intervals, bubbles) = bifurcation_bubble(&graph, &threads, node_hashset, node_path_index);
+        let node_path_index = index_faster(&graph.paths, &threads);
+        (intervals, bubbles) = bifurcation_bubble(&graph, &threads, node_path_index);
 
 
     }
@@ -134,6 +134,10 @@ fn main() {
     write_wrapper(chunks, g2p, paths, out_prefix, bubbles);
 
     info!("Done");
+
+    // TODO
+    // - Add relationsship
+    // - Add nestedness
 
 }
 

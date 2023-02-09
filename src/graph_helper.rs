@@ -25,7 +25,7 @@ pub fn graph2pos(graph: & gfaR_wrapper::NGfa) -> HashMap<String, Vec<usize>>{
 }
 
 /// Make index
-pub fn index_faster(paths: &Vec<NPath>, threads: &usize) -> (Vec<HashSet<u32>>, Vec<HashMap<u32, Vec<u32>>>){
+pub fn index_faster(paths: &Vec<NPath>, threads: &usize) -> (Vec<HashMap<u32, Vec<u32>>>){
 
     let f: Vec<usize> = (0..paths.len()).collect();
     let chunks = chunk_inplace(f, *threads as usize);
@@ -49,16 +49,16 @@ pub fn index_faster(paths: &Vec<NPath>, threads: &usize) -> (Vec<HashSet<u32>>, 
     }
 
     let mut res = Vec::new();
-    let mut res2 = Vec::new();
+    //let mut res2 = Vec::new();
     for _x in 0..paths.len(){
         let data = r.recv().unwrap();
         res.push((data.0, data.1.1));
-        res2.push((data.0, data.1.0))
+        //res2.push((data.0, data.1.0))
     }
     res.sort_by_key(|a| a.0);
-    res2.sort_by_key(| a | a.0);
+    //res2.sort_by_key(| a | a.0);
     let res1 = res.into_iter().map(|a| a.1).collect();
-    let res3 = res2.into_iter().map(|a| a.1).collect();
+    //let res3 = res2.into_iter().map(|a| a.1).collect();
 
-    return (res3, res1)
+    return (res1)
 }
