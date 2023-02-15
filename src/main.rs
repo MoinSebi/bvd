@@ -16,7 +16,7 @@ use crate::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
 use crate::graph_helper::{graph2pos, index_faster};
 use crate::helper::chunk_by_index;
 use crate::logging::newbuilder;
-use crate::writer::{write_wrapper};
+use crate::writer::write_wrapper;
 
 
 fn main() {

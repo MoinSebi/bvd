@@ -1,9 +1,9 @@
 use std::cmp::{max, min};
 use gfaR_wrapper::{NPath};
 use std::collections::{HashSet};
-use std::time::Instant;
 use hashbrown::HashMap;
-use crate::graph_helper::index_faster;
+use itertools::iterate;
+use log::info;
 
 /// **Get all pairs of a vector**
 ///
@@ -63,7 +63,7 @@ pub fn node2index(path: &NPath) -> HashMap<u32, Vec<u32>>{
 }
 
 pub fn test1(jo21: &HashMap<u32, Vec<u32>>) -> Vec<Vec<u32>>{
-    let mut m = jo21.keys().max().unwrap();
+    let m = jo21.keys().max().unwrap();
     let mut f: Vec<Vec<u32>> = Vec::new();
     f.resize(*m as usize + 1, vec![]);
     for (k,v) in jo21.iter(){
@@ -84,17 +84,18 @@ fn index_of_values1(vec: &Vec<u32>) -> (Vec<u32>, Vec<(u32, u32)>){
     f.sort();
     let mut old = f[0].0;
     let mut ff = vec![(0,0); *m as usize + 1];
-    let mut test: Vec<u32> = f.iter().map(|a| a.1 as u32).collect();
+    let test: Vec<u32> = f.iter().map(|a| a.1 as u32).collect();
     let mut last = 0;
     for (i,x) in f.iter().enumerate(){
         if x.0 != old {
-            unsafe {
-                ff[*old as usize] = (i as u32, (i - last) as u32);
-            }
+            ff[*old as usize] = (last as u32, (i - last) as u32);
             last = i;
             old = x.0;
         }
+
     }
+    ff[*old as usize] = (last as u32, (f.len()- last) as u32);
+
     (test, ff)
 }
 
@@ -225,6 +226,17 @@ pub fn all_combinations<T>(a: & Vec<T>, b: & Vec<T>, path: &u32, bubble_id2: &u3
 
 
 /// Intersection of two vectors
+///
+/// This is a fast implementation if the two vectors are already sorted (or close)
+///
+/// # Example
+///
+/// ```
+/// let v1 = vec![1,2,3,4];
+/// let v2 = vec![1,5,6,4];
+/// let v_intersection = vec_intersection(v1, v2);
+/// ```
+///
 pub fn vec_intersection(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
     let mut a2 = a.clone();
     let mut b2 = b.clone();
@@ -248,8 +260,6 @@ pub fn vec_intersection(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
             j += 1;
         }
     }
-    result.pop();
-    result.sort();
     result.shrink_to_fit();
     result
 }

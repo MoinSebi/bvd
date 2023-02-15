@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::sync::{Arc};
 use std::thread;
 use crossbeam_channel::unbounded;
@@ -51,7 +50,7 @@ pub fn index_faster(paths: &Vec<NPath>, threads: &usize) -> Vec<(Vec<u32>, Vec<(
     let mut res = Vec::new();
     for _x in 0..paths.len(){
         let data = r.recv().unwrap();
-        res.push((data));
+        res.push(data);
     }
     res.sort_by_key(|a| a.0);
     let res1 = res.into_iter().map(|a| a.1).collect();

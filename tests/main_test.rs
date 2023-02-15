@@ -21,7 +21,7 @@ fn main_solo() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert().success();
     let foo: String = fs::read_to_string("data/example_data/test1/test1.stats").unwrap();
-    assert_eq!(foo.contains("2	2	9"), true);
+    assert_eq!(foo.contains("1	4	1"), true);
 
     let path = "data/example_data/test1";
     //fs::remove_dir_all(path).unwrap();

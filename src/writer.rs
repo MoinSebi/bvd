@@ -5,8 +5,6 @@ use std::thread;
 use crossbeam_channel::unbounded;
 use gfaR_wrapper::NPath;
 use hashbrown::HashMap;
-use itertools::interleave;
-use log::info;
 use crate::helper::mean;
 
 
@@ -132,7 +130,6 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
     let mut dd = d.lock().unwrap();
     let mut dd2 = d2.lock().unwrap();
 
-    let soo = tmp_data.len().clone();
     let g = tmp_data.first().unwrap().3;
     let bubble = bubbles.get(g as usize).unwrap();
 

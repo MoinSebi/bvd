@@ -1,14 +1,11 @@
 use std::collections::HashSet;
 use std::iter::FromIterator;
-use std::os::unix::process::parent_id;
 use std::sync::Arc;
-use std::{thread, time};
+use std::{thread};
 use std::cmp::{max, min};
-use std::time::Instant;
 use bifurcation::bifurcation_analysis_meta;
 use crossbeam_channel::unbounded;
 use gfaR_wrapper::NGfa;
-use hashbrown::HashMap;
 use log::{info};
 use crate::bifurcation_helper::{all_combinations, all_combinations_self, get_all_pairs, get_shared_index, get_shared_index_low_mem, node2index};
 use crate::helper::chunk_inplace;
@@ -76,9 +73,6 @@ pub fn bifurcation_bubble(graph: &Arc<NGfa>,  threads: &usize, jo2: Vec<(Vec<u32
         res.extend(data);
     }
 //    drop(graph);
-    let ten_millis = time::Duration::from_secs(1);
-
-    thread::sleep(ten_millis);
     info!("Merge done");
     //let f = result_arc.as_ref().clone();
 
@@ -173,10 +167,6 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32
     // Shared references
     let arc3 = Arc::new(jo2);
 
-    let ten_millis = time::Duration::from_secs(1);
-
-    thread::sleep(ten_millis);
-
     // Handles
     //let mut handles = Vec::new();
 
@@ -194,6 +184,7 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32
                 // Get the shared index
                 //let p = test1.get(pair2.0).unwrap();
                 //let p2 = test1.get(pair2.1).unwrap();
+                info!("This pair:  {:?}", &pair2);
                 let p3 = test2.get(pair2.0).unwrap();
                 let p4 = test2.get(pair2.1).unwrap();
                 let shared_index = get_shared_index(&agraph.paths.get(pair2.0).unwrap().nodes, &agraph.paths.get(pair2.1).unwrap().nodes, p3, p4);
