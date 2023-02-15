@@ -26,3 +26,8 @@ rand = "0.8.5"
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "2.1"
+criterion = "0.3"
+
+[[bench]]
+name = "bench"
+harness = false

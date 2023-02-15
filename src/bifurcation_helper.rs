@@ -1,6 +1,7 @@
 use std::cmp::{max, min};
 use gfaR_wrapper::{NPath};
 use std::collections::{HashSet};
+use std::time::Instant;
 use hashbrown::HashMap;
 use crate::graph_helper::index_faster;
 
@@ -28,9 +29,9 @@ pub fn get_all_pairs<T>(vector: &Vec<T>) -> Vec<(T,T)>
 /// Returns:
 /// - Hashset of all nodes in a path
 /// - Hashmap of all {nodes -> vec<index>})
-pub fn path2index_hashmap(path1: &NPath) -> Vec<Vec<u32>>{
-    let node2index = index_of_values123(&path1.nodes);
-    return node2index
+pub fn path2index_hashmap(path1: &NPath) -> (Vec<u32>, Vec<(u32, u32)>){
+    let (indexx, node2index) = index_of_values1(&path1.nodes);
+    return (indexx, node2index)
 }
 
 
@@ -58,10 +59,6 @@ pub fn node2index(path: &NPath) -> HashMap<u32, Vec<u32>>{
 
         }
     }
-    // for x in index.iter_mut(){
-    //     x.1.shrink_to_fit();
-    // }
-
     return index
 }
 
@@ -75,7 +72,7 @@ pub fn test1(jo21: &HashMap<u32, Vec<u32>>) -> Vec<Vec<u32>>{
     f
 }
 
-fn index_of_values123(vec: &Vec<u32>) -> Vec<Vec<u32>> {
+fn index_of_values1(vec: &Vec<u32>) -> (Vec<u32>, Vec<(u32, u32)>){
     let mut f = Vec::new();
     let mut m: &u32 = &0;
     for (i, x) in vec.iter().enumerate(){
@@ -86,39 +83,49 @@ fn index_of_values123(vec: &Vec<u32>) -> Vec<Vec<u32>> {
     }
     f.sort();
     let mut old = f[0].0;
-    let mut tmp = Vec::new();
-    let mut ff = vec![vec![]; *m as usize + 1];
-    for x in f.iter(){
-        if x.0 != old{
-            ff[*old as usize] = tmp;
+    let mut ff = vec![(0,0); *m as usize + 1];
+    let mut test: Vec<u32> = f.iter().map(|a| a.1 as u32).collect();
+    let mut last = 0;
+    for (i,x) in f.iter().enumerate(){
+        if x.0 != old {
+            unsafe {
+                ff[*old as usize] = (i as u32, (i - last) as u32);
+            }
+            last = i;
             old = x.0;
-            tmp = vec![x.1 as u32]
-        } else{
-            tmp.push(x.1 as u32);
         }
     }
-
-    ff
-
+    (test, ff)
 }
 
 
 
 
 /// Get all positions [x1, x2] of the same shared nodes
-pub fn get_shared_index(jo11: &Vec<u32>, jo12: &Vec<u32>, jo21: &Vec<Vec<u32>>, jo22: &Vec<Vec<u32>>) -> Vec<[u32; 3]> {
+pub fn get_shared_index(jo11: &Vec<u32>, jo12: &Vec<u32>, jo21: &(Vec<u32>, Vec<(u32, u32)>), jo22: &(Vec<u32>, Vec<(u32, u32)>)) -> Vec<[u32; 3]> {
+
 
     let shared_nodes: Vec<u32> = vec_intersection(jo11, jo12);
+
     let mut result = Vec::new();
 
     for x in shared_nodes.iter(){
-        let k = jo21.get(*x as usize).unwrap();
-        let k2 = jo22.get(*x as usize).unwrap();
+        let mut k = &(0,0);
+        let mut k2 = &(0,0);
+        unsafe {
+            k = jo21.1.get_unchecked(*x as usize);
+            k2 = jo22.1.get_unchecked(*x as usize);
+
+        };
+
+        let kk1 = &jo21.0[k.0 as usize..(k.0 + k.1) as usize];
+        let kk2 = &jo22.0[k2.0 as usize..(k2.0 + k2.1) as usize];
+
         //println!("{:?} {:?} {:?}", k, k2, x);
-        if (k.len() > 1) | (k2.len() > 1){
-            result.extend(all_combinations2(k, k2, &(*x as u32)))
+        if (k.1 > 1) || (k2.1 > 1){
+            result.extend(all_combinations3(kk1, kk2, &(*x as u32)))
         } else {
-            result.push([k[0], k2[0], *x as u32])
+            result.push([kk1[0], kk2[0], *x as u32])
         }
     }
     //Sort it afterwards
@@ -153,6 +160,22 @@ pub fn get_shared_index_low_mem(path1: &NPath, path2: &NPath) -> Vec<[u32; 3]> {
     result
 }
 
+/// **Get all combinations of two vectors**
+///
+pub fn all_combinations3<T>(a: &[T], b: &[T], node_id: &T) -> Vec<[T; 3]>
+    where T: Clone + Copy{
+    {
+        let mut p = Vec::with_capacity(a.len() * b.len());
+        for x in a.iter(){
+            for y in b.iter(){
+                p.push([*x,*y, *node_id])
+            }
+        }
+        p
+    }
+}
+
+
 
 /// **Get all combinations of two vectors**
 ///
@@ -173,12 +196,12 @@ pub fn all_combinations2<T>(a: & Vec<T>, b: & Vec<T>, node_id: &T) -> Vec<[T; 3]
 /// **Get all non-self combinations of a 2D vector
 ///
 pub fn all_combinations_self<T>(a: & Vec<T>, path: &u32, bubble_id2: &u32) -> Vec<(usize, T, T, u32)>
-    where T: Clone + Ord{
+    where T: Clone + Ord + Copy{
     {
         let mut p = Vec::new();
         for (i, x) in a.iter().enumerate(){
-            for y in i..a.len(){
-                p.push((path.clone() as usize, min(x.clone(), a[y].clone()), max(x.clone(), a[y].clone()).clone(), bubble_id2.clone()));
+            for y in i+1..a.len(){
+                p.push((*path as usize, *min(x, &a[y]), *max(x, &a[y]), *bubble_id2));
             }
         }
         p
@@ -188,12 +211,12 @@ pub fn all_combinations_self<T>(a: & Vec<T>, path: &u32, bubble_id2: &u32) -> Ve
 /// **Get all combinations of two vectors**
 /// Generic version
 pub fn all_combinations<T>(a: & Vec<T>, b: & Vec<T>, path: &u32, bubble_id2: &u32) -> Vec<(usize, T, T, u32)>
-    where T: Clone + Ord{
+    where T: Clone + Ord + Copy{
     {
         let mut p = Vec::new();
         for  x in a.iter(){
             for y in b.iter(){
-                p.push((path.clone() as usize, min(x.clone(),y.clone()), max(x.clone(),y.clone()), bubble_id2.clone()));
+                p.push((*path as usize, *min(x, y), *max(x,y), *bubble_id2));
             }
         }
         p
@@ -207,7 +230,7 @@ pub fn vec_intersection(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
     let mut b2 = b.clone();
     a2.sort();
     b2.sort();
-    let mut result = vec![];
+    let mut result = Vec::with_capacity(a.len()+b.len());
     let mut i = 0;
     let mut j = 0;
     let mut old = 0;
@@ -226,6 +249,8 @@ pub fn vec_intersection(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
         }
     }
     result.pop();
+    result.sort();
+    result.shrink_to_fit();
     result
 }
 

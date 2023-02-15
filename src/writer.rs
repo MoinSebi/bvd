@@ -16,7 +16,7 @@ use crate::helper::mean;
 ///
 /// Comment:
 /// - Sending data is not needed (maybe replace later)
-pub fn write_wrapper(data:  Vec<Vec<(usize, u32, u32, u32)>>, index2pos: HashMap<String, Vec<usize>>, paths: Vec<NPath>, filename_prefix: &str, bubbles: Vec<(u32, u32)>) {
+pub fn write_wrapper(data:  Vec<Vec<(usize, u32, u32, u32)>>, index2pos: HashMap<String, Vec<usize>>, paths: &Vec<NPath>, filename_prefix: &str, bubbles: Vec<(u32, u32)>) {
     // Create the two files
     let file1 = Arc::new(Mutex::new(BufWriter::new(File::create(filename_prefix.to_owned() + ".bed").unwrap())));
     let file2 = Arc::new(Mutex::new(BufWriter::new(File::create(filename_prefix.to_owned() + ".stats").unwrap())));
@@ -24,7 +24,7 @@ pub fn write_wrapper(data:  Vec<Vec<(usize, u32, u32, u32)>>, index2pos: HashMap
 
     // Additional references
     let arc_index = Arc::new(index2pos);
-    let arc_paths = Arc::new(paths);
+    let arc_paths = Arc::new(paths.clone());
     let data_len = data.len().clone();
     let arc_bubbles = Arc::new(bubbles);
 
@@ -103,6 +103,7 @@ pub fn traversal_stats(data:  Vec<(usize, u32, u32, u32)>, index2: Arc<HashMap<S
 
 
         let p = &paths[interval.0];
+
         let k = &p.nodes[(interval.1 + 1) as usize..interval.2 as usize];
         let k2 = &p.dir[(interval.1 + 1) as usize..interval.2 as usize];
         let k10: (&[u32], &[bool]) = (k, k2);

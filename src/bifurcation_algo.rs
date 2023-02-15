@@ -2,7 +2,9 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::os::unix::process::parent_id;
 use std::sync::Arc;
-use std::thread;
+use std::{thread, time};
+use std::cmp::{max, min};
+use std::time::Instant;
 use bifurcation::bifurcation_analysis_meta;
 use crossbeam_channel::unbounded;
 use gfaR_wrapper::NGfa;
@@ -17,13 +19,11 @@ use crate::helper::chunk_inplace;
 /// Returns
 /// - Vector of all bubbles (u32, u32) - (start, end)
 /// - VEctor of all intervals (usize, u32, u32, u32) - (pindex, index1, index2, bubble_id)
-pub fn bifurcation_bubble(graph: &NGfa, threads: &usize, jo2: Vec<Vec<Vec<u32>>>) -> (Vec<(usize, u32, u32, u32)>, Vec<(u32, u32)>){
+pub fn bifurcation_bubble(graph: &Arc<NGfa>,  threads: &usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32)>)>) -> (Vec<(usize, u32, u32, u32)>, Vec<(u32, u32)>){
     info!("Running bifurcation analysis");
     let mut result;
     // This returns all bubbles
-    info!("test1");
-    result = bvd2(graph, threads.clone(), jo2.clone());
-    info!("dsakjdasksd");
+    result = bvd2(&graph, threads.clone(), jo2);
     result.sort_by_key(|a|a.0);
 
 
@@ -34,22 +34,28 @@ pub fn bifurcation_bubble(graph: &NGfa, threads: &usize, jo2: Vec<Vec<Vec<u32>>>
     let resss = result.clone();
 
     let result_arc = Arc::new(result);
-    let arc1 = Arc::new(graph.paths.clone());
 
     info!("Merge");
     for x in chunks{
         let ff1 = result_arc.clone();
-        let aa1 = arc1.clone();
+        let aa1 = graph.clone();
         let s1 = s.clone();
         let _handle = thread::spawn(move || {
             for y in x.iter(){
-                let paa = aa1.get(*y).unwrap();
+                let paa = aa1.paths.get(*y).unwrap();
                 let path2index = node2index(paa);
                 let mut test = Vec::new();
                 for (i, (start, end)) in ff1.iter().enumerate(){
                     if path2index.contains_key(&(*start as u32)) && path2index.contains_key(&(*end as u32)) {
                         if start != end {
-                            test.extend(all_combinations(path2index.get(&(*start as u32)).unwrap(), path2index.get(&(*end as u32)).unwrap(), &(*y as u32), &(i as u32)));
+                            let i1 = path2index.get(&(*start as u32)).unwrap();
+                            let i2 = path2index.get(&(*end as u32)).unwrap();
+                            if i1.len() == 1 && i2.len() == 1{
+                                test.push((*y, min(i1[0], i2[0]), max(i1[0], i2[0]), i as u32));
+
+                            } else {
+                                test.extend(all_combinations(path2index.get(&(*start as u32)).unwrap(), path2index.get(&(*end as u32)).unwrap(), &(*y as u32), &(i as u32)));
+                            }
                         } else {
                             test.extend(all_combinations_self(path2index.get(&(*start as u32)).unwrap(), &(*y as u32), &(i as u32)));
                         }
@@ -63,12 +69,19 @@ pub fn bifurcation_bubble(graph: &NGfa, threads: &usize, jo2: Vec<Vec<Vec<u32>>>
         });
     }
 
+
     let mut res = Vec::new();
     for _x in 0..graph.paths.len(){
         let data = r.recv().unwrap();
         res.extend(data);
     }
+//    drop(graph);
+    let ten_millis = time::Duration::from_secs(1);
+
+    thread::sleep(ten_millis);
     info!("Merge done");
+    //let f = result_arc.as_ref().clone();
+
 
     //let ff2 = Vec::new();
     return (res, resss);
@@ -147,22 +160,22 @@ pub fn bifurcation_bubble_lowmem(graph: &NGfa, threads: &usize) -> (Vec<(usize, 
 /// - Return (Name1, Name2) -> Vec<[[<start, stop>] (name1), [start, stop] (name2)]
 /// TODO:
 /// - Make outcome clear
-pub fn bvd2(graph: &NGfa, threads: usize, jo2: Vec<Vec<Vec<u32>>>) -> Vec<(u32, u32)>{
+pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32)>)>) -> Vec<(u32, u32)>{
     let (s, r) = unbounded();
 
     // Get all pairs of paths - (n*n-1)/2
     let f: Vec<usize> = (0..graph.paths.len()).collect();
     let pairs2 = get_all_pairs(&f);
-    let pairs = get_all_pairs(&graph.paths);
-    let pp = pairs.len().clone();
+    let pp = pairs2.len().clone();
     // Chunk the pairs
     let chunks = chunk_inplace(pairs2, threads);
 
     // Shared references
     let arc3 = Arc::new(jo2);
-    let arc4 = Arc::new(graph.clone());
 
+    let ten_millis = time::Duration::from_secs(1);
 
+    thread::sleep(ten_millis);
 
     // Handles
     //let mut handles = Vec::new();
@@ -172,7 +185,7 @@ pub fn bvd2(graph: &NGfa, threads: usize, jo2: Vec<Vec<Vec<u32>>>) -> Vec<(u32, 
 
         let s1 = s.clone();
         let test2 = arc3.clone();
-        let agraph = arc4.clone();
+        let agraph = graph.clone();
         let _handle = thread::spawn(move || {
 
 
@@ -186,7 +199,7 @@ pub fn bvd2(graph: &NGfa, threads: usize, jo2: Vec<Vec<Vec<u32>>>) -> Vec<(u32, 
                 let shared_index = get_shared_index(&agraph.paths.get(pair2.0).unwrap().nodes, &agraph.paths.get(pair2.1).unwrap().nodes, p3, p4);
                 let result = bifurcation_analysis_meta(&shared_index);
                 //let result = Vec::new();
-                let f: HashSet<(u32, u32)> = HashSet::from_iter(result.iter().cloned());
+                let f: HashSet<(u32, u32)> = result.iter().cloned().collect();
                 s1.send(f).expect("Help");
 
 

@@ -9,6 +9,7 @@ mod bifurcation_helper;
 use clap::{Arg, App, AppSettings};
 use std::path::Path;
 use std::process;
+use std::sync::Arc;
 use gfaR_wrapper::{NGfa};
 use log::{ info, warn};
 use crate::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
@@ -101,15 +102,10 @@ fn main() {
     info!("Reading the graph");
     let mut graph: NGfa = NGfa::new();
     graph.from_file_direct2(graph_file);
-
+    let graph_f = Arc::new(graph);
     // For each path create a hashmap which returns for each index the exact position in the path
-    info!("Create the index2position index");
-    let g2p = graph2pos(&graph);
-
 
     // CLone the paths and path2index (not sure)
-    let paths = graph.paths.clone();
-    let _p2id = graph.path2id.clone();
 
 
     // Bifurcation functions
@@ -118,22 +114,23 @@ fn main() {
     let mut bubbles: Vec<(u32, u32)> = vec![];
     if matches.is_present("low-memory"){
         info!("Running in low mem mode");
-        (intervals, bubbles) = bifurcation_bubble_lowmem(&graph, &threads);
+        //(intervals, bubbles) = bifurcation_bubble_lowmem(&graph, &threads);
     } else {
-        let node_path_index = index_faster(&graph.paths, &threads);
-        (intervals, bubbles) = bifurcation_bubble(&graph, &threads, node_path_index);
-
-
+        let node_path_index = index_faster(&graph_f.paths, &threads);
+        (intervals, bubbles) = bifurcation_bubble(&graph_f, &threads, node_path_index);
     }
     // Lets write bubble and other file at the same time
     info!("Number of intervals {}", intervals.len().clone());
     info!("Number of bubbles {}", bubbles.len());
     let chunks =  chunk_by_index(intervals, bubbles.len().clone() as u32, threads as u32);info!("Statistics and writing output");
+    //
+    let g2p = graph2pos(&graph_f);
 
+    //
     // Write output
-    write_wrapper(chunks, g2p, paths, out_prefix, bubbles);
-
-    info!("Done");
+    write_wrapper(chunks, g2p, &graph_f.paths, out_prefix, bubbles);
+    //
+    // info!("Done");
 
     // TODO
     // - Add relationsship
