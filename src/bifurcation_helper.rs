@@ -21,16 +21,6 @@ pub fn get_all_pairs<T>(vector: &Vec<T>) -> Vec<(T,T)>
 
 
 //------------------INDEX--------------------------------------------------------------
-/// Index constructor
-///
-/// Returns:
-/// - Hashset of all nodes in a path
-/// - Hashmap of all {nodes -> vec<index>})
-pub fn path2index(path1: &NPath) -> (Vec<u32>, Vec<(u32, u32)>){
-    let (indexx, node2index) = node_index(&path1.nodes);
-    return (indexx, node2index)
-}
-
 
 
 /// Takes a path and creates a node index
@@ -52,8 +42,31 @@ pub fn node2index(path: &NPath) -> HashMap<u32, Vec<u32>>{
     return index
 }
 
-fn node_index(vec: &Vec<u32>) -> (Vec<u32>, Vec<(u32, u32)>){
-    let mut f = Vec::new();
+
+
+/// This is an alternative approach to node2index with lower memory and faster lookup (in theory)
+///
+/// This replaces a Hashmap(value -> Vec[index]);
+///
+/// Workflow
+/// 1. Create a vector which in the order of the nodes in the path which returns a (node_id, index)
+///     + Check the highest "value" in the vector
+/// 2. Sort the new vector by nodes
+/// 3. Create a vector which holds a (0,0) from 0 to max value found in the original value
+/// 4. Iterate over the (node, index) vector
+///     1. If the node changes, report insert the (index, and length of the numbers) in the initialized list
+///
+/// Result:
+///     - Vector of all index of path in the order of nodes
+///     - Vector of position and length for each value. Some entries stay (0,0)
+///
+///
+/// Comment: In theory this is possible with every "key" data, when it is possible to convert it into a usize. For now this is only for u32.
+///
+/// Scales with the amount of nodes in the graph. The more collinear the genomes are, the better is the compression.
+///
+pub fn node2index_low_mem(vec: &Vec<u32>) -> (Vec<u32>, Vec<(u32, u32)>){
+    let mut f = Vec::with_capacity(vec.len());
     let mut m: &u32 = &0;
     for (i, x) in vec.iter().enumerate(){
         f.push((x,i));

@@ -3,7 +3,7 @@ use std::thread;
 use crossbeam_channel::unbounded;
 use gfaR_wrapper::{NGfa, NPath};
 use hashbrown::{HashMap};
-use crate::bifurcation_helper::{path2index};
+use crate::bifurcation_helper::{node2index_low_mem};
 use crate::helper::chunk_inplace;
 
 /// Convert index in the graph to positional information
@@ -48,7 +48,7 @@ pub fn node2index_wrapper(paths: &Vec<NPath>, threads: &usize) -> Vec<(Vec<u32>,
                 let path = path_arc2.get(*path_index).unwrap();
 
                 // Compute the index
-                let node2index_data = path2index(path);
+                let node2index_data = node2index_low_mem(&path.nodes);
 
                 // Send data
                 sender_copy.send((*path_index, node2index_data)).expect("ERROR");
