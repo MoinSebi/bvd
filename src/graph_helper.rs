@@ -3,7 +3,7 @@ use std::thread;
 use crossbeam_channel::unbounded;
 use gfaR_wrapper::{NGfa, NPath};
 use hashbrown::{HashMap};
-use crate::bifurcation_helper::{path2index_hashmap};
+use crate::bifurcation_helper::{path2index};
 use crate::helper::chunk_inplace;
 
 /// Convert index in the graph to positional information
@@ -23,37 +23,51 @@ pub fn graph2pos(graph: & Arc<NGfa>) -> HashMap<String, Vec<usize>>{
     result_hm
 }
 
-/// Make index
-pub fn index_faster(paths: &Vec<NPath>, threads: &usize) -> Vec<(Vec<u32>, Vec<(u32, u32)>)>{
+/// Creates a "node to index" index for each path
+///
+/// This is mainly a wrapper function for multithreading
+pub fn node2index_wrapper(paths: &Vec<NPath>, threads: &usize) -> Vec<(Vec<u32>, Vec<(u32, u32)>)>{
 
+    // Number of path for computation + chunking in number of threads
     let f: Vec<usize> = (0..paths.len()).collect();
     let chunks = chunk_inplace(f, *threads as usize);
-    let ps = Arc::new(paths.clone());
 
+    // Create reference for each thread
+    let path_arc = Arc::new(paths.clone());
+
+    // Crossbeam setup
     let (s, r) = unbounded();
 
-    for x in chunks{
-        let s1 = s.clone();
-        let ps2 = ps.clone();
+    // Iterate over chunks
+    for paths_chunks in chunks{
+        let sender_copy = s.clone();
+        let path_arc2 = path_arc.clone();
         let _handle = thread::spawn(move || {
-            for y in x.iter(){
-                let gg = ps2.get(*y).unwrap();
-                let f = path2index_hashmap(gg);
-                s1.send((y.clone(), f)).expect("Help123");
+            for path_index in paths_chunks.iter(){
+                // Get the path
+                let path = path_arc2.get(*path_index).unwrap();
 
+                // Compute the index
+                let node2index_data = path2index(path);
+
+                // Send data
+                sender_copy.send((*path_index, node2index_data)).expect("ERROR");
             }
-
-
         });
     }
+    // Pre-result vector
+    let mut pre_result = Vec::new();
 
-    let mut res = Vec::new();
-    for _x in 0..paths.len(){
-        let data = r.recv().unwrap();
-        res.push(data);
+    // Iterate over data from threads
+    for _path_index in 0..paths.len(){
+        let data_received = r.recv().unwrap();
+        pre_result.push(data_received);
     }
-    res.sort_by_key(|a| a.0);
-    let res1 = res.into_iter().map(|a| a.1).collect();
+    // Sort and create new vector which is in order of the path
+    pre_result.sort_by_key(|a| a.0);
 
-    return res1
+    // Only copy the real data (but in the order of
+    let result = pre_result.into_iter().map(|a| a.1).collect();
+
+    return result
 }

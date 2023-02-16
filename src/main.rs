@@ -13,7 +13,7 @@ use std::sync::Arc;
 use gfaR_wrapper::{NGfa};
 use log::{ info, warn};
 use crate::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
-use crate::graph_helper::{graph2pos, index_faster};
+use crate::graph_helper::{graph2pos, node2index_wrapper};
 use crate::helper::chunk_by_index;
 use crate::logging::newbuilder;
 use crate::writer::write_wrapper;
@@ -116,7 +116,8 @@ fn main() {
         info!("Running in low mem mode");
         //(intervals, bubbles) = bifurcation_bubble_lowmem(&graph, &threads);
     } else {
-        let node_path_index = index_faster(&graph_f.paths, &threads);
+        // Index node->index - more in the function comment
+        let node_path_index = node2index_wrapper(&graph_f.paths, &threads);
         (intervals, bubbles) = bifurcation_bubble(&graph_f, &threads, node_path_index);
     }
     // Lets write bubble and other file at the same time
@@ -130,7 +131,7 @@ fn main() {
     // Write output
     write_wrapper(chunks, g2p, &graph_f.paths, out_prefix, bubbles);
     //
-    // info!("Done");
+    info!("Done");
 
     // TODO
     // - Add relationsship

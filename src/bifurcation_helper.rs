@@ -3,7 +3,6 @@ use gfaR_wrapper::{NPath};
 use std::collections::{HashSet};
 use hashbrown::HashMap;
 use itertools::iterate;
-use log::info;
 
 /// **Get all pairs of a vector**
 ///
@@ -29,19 +28,12 @@ pub fn get_all_pairs<T>(vector: &Vec<T>) -> Vec<(T,T)>
 /// Returns:
 /// - Hashset of all nodes in a path
 /// - Hashmap of all {nodes -> vec<index>})
-pub fn path2index_hashmap(path1: &NPath) -> (Vec<u32>, Vec<(u32, u32)>){
-    let (indexx, node2index) = index_of_values1(&path1.nodes);
+pub fn path2index(path1: &NPath) -> (Vec<u32>, Vec<(u32, u32)>){
+    let (indexx, node2index) = node_index(&path1.nodes);
     return (indexx, node2index)
 }
 
 
-/// HashSet of the nodes in a path
-///
-/// Copy the data (this might not be needed)
-pub fn path2hashset(path: &NPath) -> HashSet<u32>{
-    let node_hs = path.nodes.iter().cloned().collect();
-    return node_hs
-}
 
 /// Takes a path and creates a node index
 ///
@@ -62,17 +54,7 @@ pub fn node2index(path: &NPath) -> HashMap<u32, Vec<u32>>{
     return index
 }
 
-pub fn test1(jo21: &HashMap<u32, Vec<u32>>) -> Vec<Vec<u32>>{
-    let m = jo21.keys().max().unwrap();
-    let mut f: Vec<Vec<u32>> = Vec::new();
-    f.resize(*m as usize + 1, vec![]);
-    for (k,v) in jo21.iter(){
-        f[*k as usize] =  v.clone();
-    }
-    f
-}
-
-fn index_of_values1(vec: &Vec<u32>) -> (Vec<u32>, Vec<(u32, u32)>){
+fn node_index(vec: &Vec<u32>) -> (Vec<u32>, Vec<(u32, u32)>){
     let mut f = Vec::new();
     let mut m: &u32 = &0;
     for (i, x) in vec.iter().enumerate(){
@@ -102,35 +84,49 @@ fn index_of_values1(vec: &Vec<u32>) -> (Vec<u32>, Vec<(u32, u32)>){
 
 
 
-/// Get all positions [x1, x2] of the same shared nodes
-pub fn get_shared_index(jo11: &Vec<u32>, jo12: &Vec<u32>, jo21: &(Vec<u32>, Vec<(u32, u32)>), jo22: &(Vec<u32>, Vec<(u32, u32)>)) -> Vec<[u32; 3]> {
+/// Get all the index pairs of all shared nodes
+///
+///
+/// Input:
+/// - path1_nodes: Nodes of the first path
+/// - path2_nodes: Nodes of the second path
+/// - path1_index: Index of the first path
+/// - path2_index: Index of the second path
+///
+/// Output:
+/// - (index_from, index_to, node_id)
+///
+/// Comment: This is input for the bifurcation algorithm. Not sure if unsafe code makes it faster...
+pub fn get_shared_index(path1_nodes: &Vec<u32>, path2_nodes: &Vec<u32>, path1_index: &(Vec<u32>, Vec<(u32, u32)>), path2_index: &(Vec<u32>, Vec<(u32, u32)>)) -> Vec<[u32; 3]> {
 
+    // Make intersection of the two node sets
+    let shared_nodes: Vec<u32> = vec_intersection(path1_nodes, path2_nodes);
 
-    let shared_nodes: Vec<u32> = vec_intersection(jo11, jo12);
+    let mut result = Vec::with_capacity(shared_nodes.len()*2);
 
-    let mut result = Vec::new();
-
-    for x in shared_nodes.iter(){
-        let mut k = &(0,0);
-        let mut k2 = &(0,0);
+    for shared_node in shared_nodes.iter(){
+        let mut path1_i = &(0, 0);
+        let mut path2_i = &(0, 0);
         unsafe {
-            k = jo21.1.get_unchecked(*x as usize);
-            k2 = jo22.1.get_unchecked(*x as usize);
+            path1_i = path1_index.1.get_unchecked(*shared_node as usize);
+            path2_i = path2_index.1.get_unchecked(*shared_node as usize);
 
         };
 
-        let kk1 = &jo21.0[k.0 as usize..(k.0 + k.1) as usize];
-        let kk2 = &jo22.0[k2.0 as usize..(k2.0 + k2.1) as usize];
+        let path1_islice = &path1_index.0[path1_i.0 as usize ..(path1_i.0 + path1_i.1) as usize];
+        let path2_islice = &path2_index.0[path2_i.0 as usize..(path2_i.0 + path2_i.1) as usize];
 
         //println!("{:?} {:?} {:?}", k, k2, x);
-        if (k.1 > 1) || (k2.1 > 1){
-            result.extend(all_combinations3(kk1, kk2, &(*x as u32)))
+        if (path1_i.1 > 1) || (path2_i.1 > 1){
+            result.extend(all_combinations3(path1_islice, path2_islice, &(*shared_node as u32)))
         } else {
-            result.push([kk1[0], kk2[0], *x as u32])
+            result.push([path1_islice[0], path2_islice[0], *shared_node as u32])
         }
     }
     //Sort it afterwards
+    // This sorting is very slow (same as intersection and index creation together)
     result.sort();
+
     result
 }
 
@@ -176,6 +172,15 @@ pub fn all_combinations3<T>(a: &[T], b: &[T], node_id: &T) -> Vec<[T; 3]>
     }
 }
 
+pub fn sort_nodes(paths: &Vec<NPath>) -> Vec<Vec<u32>>{
+    let mut sort_nodes = Vec::with_capacity(paths.len());
+    for path in paths.iter(){
+        let mut f = path.nodes.clone();
+        f.sort();
+        sort_nodes.push(f);
+    }
+    sort_nodes
+}
 
 
 /// **Get all combinations of two vectors**
@@ -224,17 +229,20 @@ pub fn all_combinations<T>(a: & Vec<T>, b: & Vec<T>, path: &u32, bubble_id2: &u3
     }
 }
 
-
 /// Intersection of two vectors
 ///
 /// This is a fast implementation if the two vectors are already sorted (or close)
 ///
+/// Comment:
+/// In our examples, sorting takes 1/3 of the total time. Since this function is run multiple times, it might efficient to sort beforehand and hand over the sorted vectors (nodes). This adds some additional memory.
+///
 /// # Example
 ///
-/// ```
+/// ``` rust
 /// let v1 = vec![1,2,3,4];
 /// let v2 = vec![1,5,6,4];
 /// let v_intersection = vec_intersection(v1, v2);
+/// assert_eq(v_intersection, vec![1,4])
 /// ```
 ///
 pub fn vec_intersection(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
@@ -265,7 +273,11 @@ pub fn vec_intersection(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
 }
 
 
+
+
+
 #[cfg(test)]
+/// Tests for some functions in this file.
 mod tests {
     use log::info;
     use crate::bifurcation_helper::vec_intersection;

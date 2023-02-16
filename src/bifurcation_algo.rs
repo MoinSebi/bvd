@@ -3,11 +3,12 @@ use std::iter::FromIterator;
 use std::sync::Arc;
 use std::{thread};
 use std::cmp::{max, min};
+use std::time::Instant;
 use bifurcation::bifurcation_analysis_meta;
 use crossbeam_channel::unbounded;
 use gfaR_wrapper::NGfa;
 use log::{info};
-use crate::bifurcation_helper::{all_combinations, all_combinations_self, get_all_pairs, get_shared_index, get_shared_index_low_mem, node2index};
+use crate::bifurcation_helper::{all_combinations, all_combinations_self, get_all_pairs, get_shared_index, get_shared_index_low_mem, node2index, sort_nodes};
 use crate::helper::chunk_inplace;
 
 
@@ -21,6 +22,9 @@ pub fn bifurcation_bubble(graph: &Arc<NGfa>,  threads: &usize, jo2: Vec<(Vec<u32
     let mut result;
     // This returns all bubbles
     result = bvd2(&graph, threads.clone(), jo2);
+
+
+
     result.sort_by_key(|a|a.0);
 
 
@@ -156,9 +160,11 @@ pub fn bifurcation_bubble_lowmem(graph: &NGfa, threads: &usize) -> (Vec<(usize, 
 /// - Make outcome clear
 pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32)>)>) -> Vec<(u32, u32)>{
     let (s, r) = unbounded();
-
     // Get all pairs of paths - (n*n-1)/2
     let f: Vec<usize> = (0..graph.paths.len()).collect();
+
+    let new_vec = sort_nodes(&graph.paths);
+
     let pairs2 = get_all_pairs(&f);
     let pp = pairs2.len().clone();
     // Chunk the pairs
@@ -166,6 +172,8 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32
 
     // Shared references
     let arc3 = Arc::new(jo2);
+
+    let arc5 = Arc::new(new_vec);
 
     // Handles
     //let mut handles = Vec::new();
@@ -175,23 +183,47 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32
 
         let s1 = s.clone();
         let test2 = arc3.clone();
-        let agraph = graph.clone();
+        let apath = arc5.clone();
         let _handle = thread::spawn(move || {
 
 
 
             for pair2 in chunk.iter(){
-                // Get the shared index
-                //let p = test1.get(pair2.0).unwrap();
-                //let p2 = test1.get(pair2.1).unwrap();
+                let start = Instant::now();
+
                 info!("This pair:  {:?}", &pair2);
                 let p3 = test2.get(pair2.0).unwrap();
                 let p4 = test2.get(pair2.1).unwrap();
-                let shared_index = get_shared_index(&agraph.paths.get(pair2.0).unwrap().nodes, &agraph.paths.get(pair2.1).unwrap().nodes, p3, p4);
-                let result = bifurcation_analysis_meta(&shared_index);
+                // In my example this was 300 ms    let elapsed = start.elapsed();
+
+
+                let elapsed = start.elapsed();
+
+                // Debug format
+                println!("Debug: {:?}", elapsed);
+                //
+                //     // Debug format
+                //     println!("Debug: {:?}", elapsed);
+                let mut shared_index = get_shared_index(&apath.get(pair2.0).unwrap(), &apath.get(pair2.1).unwrap(), p3, p4);
+                let elapsed = start.elapsed();
+                shared_index.sort();
+
+                // Debug format
+                println!("Debug: {:?} {}", elapsed, shared_index.len());
+
+                let mut result = bifurcation_analysis_meta(&shared_index);
+
                 //let result = Vec::new();
-                let f: HashSet<(u32, u32)> = result.iter().cloned().collect();
-                s1.send(f).expect("Help");
+                let elapsed = start.elapsed();
+                //
+                //     // Debug format
+                     println!("Debug231: {:?}", elapsed);
+                let f: HashSet<(u32, u32)> = HashSet::from_iter(result);
+                s1.send(f).expect("Help");    let elapsed = start.elapsed();
+
+                // Debug format
+                println!("Debug: {:?}", elapsed);
+
 
 
             }
@@ -199,9 +231,10 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32
     }
 
     let mut res: HashSet<(u32, u32)> = HashSet::new();
+    //let mut res = Vec::new();
     for _x in 0..pp{
         let data = r.recv().unwrap();
-        res.extend(data);
+        res.extend(data.into_iter());
     }
     let mut res: Vec<(u32, u32)> = res.into_iter().collect();
     res.sort();
