@@ -18,7 +18,13 @@ use crate::helper::chunk_by_index;
 use crate::logging::newbuilder;
 use crate::writer::write_wrapper;
 
-
+/// TODO:
+/// - Update merge function
+/// - Improve runtime on stats
+/// - Check why bifurcation is so slow
+/// - Adjust reader
+/// - Remove the timing stuff
+///
 fn main() {
     let matches = App::new("bvd")
         .setting(AppSettings::ArgRequiredElseHelp)
@@ -91,11 +97,10 @@ fn main() {
             warn!("No file with such name");
             process::exit(0x0100);
         }
-
     }
 
     // This is the prefix
-    let out_prefix= matches.value_of("output").unwrap();
+    let out_prefix = matches.value_of("output").unwrap();
 
 
     // Read the graph - using this function if faster because if ignores all edges (not needed here)
@@ -112,7 +117,7 @@ fn main() {
     info!("Index graph");
     let mut intervals: Vec<(usize, u32, u32, u32)> = Vec::new();
     let mut bubbles: Vec<(u32, u32)> = vec![];
-    if matches.is_present("low-memory"){
+    if matches.is_present("low-memory") {
         info!("Running in low mem mode");
         //(intervals, bubbles) = bifurcation_bubble_lowmem(&graph, &threads);
     } else {
@@ -120,10 +125,12 @@ fn main() {
         let node_path_index = node2index_wrapper(&graph_f.paths, &threads);
         (intervals, bubbles) = bifurcation_bubble(&graph_f, &threads, node_path_index);
     }
+
     // Lets write bubble and other file at the same time
     info!("Number of intervals {}", intervals.len().clone());
     info!("Number of bubbles {}", bubbles.len());
-    let chunks =  chunk_by_index(intervals, bubbles.len().clone() as u32, threads as u32);info!("Statistics and writing output");
+    let chunks = chunk_by_index(intervals, bubbles.len().clone() as u32, threads as u32);
+    info!("Statistics and writing output");
     //
     let g2p = graph2pos(&graph_f);
 
@@ -132,10 +139,6 @@ fn main() {
     write_wrapper(chunks, g2p, &graph_f.paths, out_prefix, bubbles);
     //
     info!("Done");
-
-    // TODO
-    // - Add relationsship
-    // - Add nestedness
 
 }
 

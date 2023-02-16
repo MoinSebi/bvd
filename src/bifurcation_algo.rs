@@ -211,7 +211,7 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32
                 // Debug format
                 println!("Debug: {:?} {}", elapsed, shared_index.len());
 
-                let mut result = bifurcation_analysis_meta(&shared_index);
+                let result = bifurcation_analysis_meta(&shared_index);
 
                 //let result = Vec::new();
                 let elapsed = start.elapsed();

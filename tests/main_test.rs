@@ -24,8 +24,8 @@ fn main_solo() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(foo.contains("1	4	1"), true);
 
     let path = "data/example_data/test1";
-    //fs::remove_dir_all(path).unwrap();
-    //fs::create_dir(path).unwrap();
+    fs::remove_dir_all(path).unwrap();
+    fs::create_dir(path).unwrap();
 
 
     Ok(())

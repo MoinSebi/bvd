@@ -1,8 +1,6 @@
 use std::cmp::{max, min};
 use gfaR_wrapper::{NPath};
-use std::collections::{HashSet};
 use hashbrown::HashMap;
-use itertools::iterate;
 
 /// **Get all pairs of a vector**
 ///
@@ -105,13 +103,8 @@ pub fn get_shared_index(path1_nodes: &Vec<u32>, path2_nodes: &Vec<u32>, path1_in
     let mut result = Vec::with_capacity(shared_nodes.len()*2);
 
     for shared_node in shared_nodes.iter(){
-        let mut path1_i = &(0, 0);
-        let mut path2_i = &(0, 0);
-        unsafe {
-            path1_i = path1_index.1.get_unchecked(*shared_node as usize);
-            path2_i = path2_index.1.get_unchecked(*shared_node as usize);
-
-        };
+        let path1_i = path1_index.1.get(*shared_node as usize).unwrap();
+        let path2_i = path2_index.1.get(*shared_node as usize).unwrap();
 
         let path1_islice = &path1_index.0[path1_i.0 as usize ..(path1_i.0 + path1_i.1) as usize];
         let path2_islice = &path2_index.0[path2_i.0 as usize..(path2_i.0 + path2_i.1) as usize];
@@ -279,7 +272,6 @@ pub fn vec_intersection(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
 #[cfg(test)]
 /// Tests for some functions in this file.
 mod tests {
-    use log::info;
     use crate::bifurcation_helper::vec_intersection;
 
     #[test]
@@ -287,7 +279,6 @@ mod tests {
         let vec1 = vec![1,2,3,4,5,1];
         let vec2 = vec![1,6,7,8,98,1];
         let vec_intersection = vec_intersection(&vec1, &vec2);
-        //eprint!("dasdad {:?}", vec_intersection);
         assert_eq!(vec_intersection.len(), 1);
     }
 }
