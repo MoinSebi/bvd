@@ -17,11 +17,11 @@ use crate::helper::chunk_inplace;
 /// Returns
 /// - Vector of all bubbles (u32, u32) - (start, end)
 /// - VEctor of all intervals (usize, u32, u32, u32) - (pindex, index1, index2, bubble_id)
-pub fn bifurcation_bubble(graph: &Arc<NGfa>,  threads: &usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32)>)>) -> (Vec<(usize, u32, u32, u32)>, Vec<(u32, u32)>){
+pub fn bifurcation_bubble(graph: &Arc<NGfa>, threads: &usize, index1: Vec<Vec<u32>>, index2: Vec<Vec<(u32, u32)>>) -> (Vec<(usize, u32, u32, u32)>, Vec<(u32, u32)>){
     info!("Running bifurcation analysis");
     let mut result;
     // This returns all bubbles
-    result = bvd2(&graph, threads.clone(), jo2);
+    result = bvd2(&graph, threads.clone(), index1, index2);
 
 
 
@@ -158,7 +158,9 @@ pub fn bifurcation_bubble_lowmem(graph: &NGfa, threads: &usize) -> (Vec<(usize, 
 /// - Return (Name1, Name2) -> Vec<[[<start, stop>] (name1), [start, stop] (name2)]
 /// TODO:
 /// - Make outcome clear
-pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32)>)>) -> Vec<(u32, u32)>{
+pub fn bvd2(graph: &Arc<NGfa>, threads: usize, index: Vec<Vec<u32>>, index2: Vec<Vec<(u32, u32)>>) -> Vec<(u32, u32)>{
+    info!("BVD indexing");
+
     let (s, r) = unbounded();
     // Get all pairs of paths - (n*n-1)/2
     let f: Vec<usize> = (0..graph.paths.len()).collect();
@@ -171,7 +173,8 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32
     let chunks = chunk_inplace(pairs2, threads);
 
     // Shared references
-    let arc3 = Arc::new(jo2);
+    let arc3 = Arc::new(index);
+    let arc4 = Arc::new(index2);
 
     let arc5 = Arc::new(new_vec);
 
@@ -183,6 +186,8 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32
 
         let s1 = s.clone();
         let test2 = arc3.clone();
+        let test3 = arc4.clone();
+
         let apath = arc5.clone();
         let _handle = thread::spawn(move || {
 
@@ -193,7 +198,11 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32
 
                 info!("This pair:  {:?}", &pair2);
                 let p3 = test2.get(pair2.0).unwrap();
+                let p31 = test3.get(pair2.0).unwrap();
+
                 let p4 = test2.get(pair2.1).unwrap();
+                let p41 = test3.get(pair2.1).unwrap();
+
                 // In my example this was 300 ms    let elapsed = start.elapsed();
 
 
@@ -204,7 +213,7 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, jo2: Vec<(Vec<u32>, Vec<(u32, u32
                 //
                 //     // Debug format
                 //     println!("Debug: {:?}", elapsed);
-                let mut shared_index = get_shared_index(&apath.get(pair2.0).unwrap(), &apath.get(pair2.1).unwrap(), p3, p4);
+                let mut shared_index = get_shared_index(&apath.get(pair2.0).unwrap(), &apath.get(pair2.1).unwrap(), p3, p31, p4, p41);
                 let elapsed = start.elapsed();
                 shared_index.sort();
 

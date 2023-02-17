@@ -108,7 +108,7 @@ pub fn node2index_low_mem(vec: &Vec<u32>) -> (Vec<u32>, Vec<(u32, u32)>){
 /// - (index_from, index_to, node_id)
 ///
 /// Comment: This is input for the bifurcation algorithm. Not sure if unsafe code makes it faster...
-pub fn get_shared_index(path1_nodes: &Vec<u32>, path2_nodes: &Vec<u32>, path1_index: &(Vec<u32>, Vec<(u32, u32)>), path2_index: &(Vec<u32>, Vec<(u32, u32)>)) -> Vec<[u32; 3]> {
+pub fn get_shared_index(path1_nodes: &Vec<u32>, path2_nodes: &Vec<u32>, path1_index_index: &Vec<u32>, path1_index_node: &Vec<(u32, u32)>,  path2_index_index: &Vec<u32>, path2_index_node: &Vec<(u32, u32)>) -> Vec<[u32; 3]> {
 
     // Make intersection of the two node sets
     let shared_nodes: Vec<u32> = vec_intersection(path1_nodes, path2_nodes);
@@ -116,11 +116,11 @@ pub fn get_shared_index(path1_nodes: &Vec<u32>, path2_nodes: &Vec<u32>, path1_in
     let mut result = Vec::with_capacity(shared_nodes.len()*2);
 
     for shared_node in shared_nodes.iter(){
-        let path1_i = path1_index.1.get(*shared_node as usize).unwrap();
-        let path2_i = path2_index.1.get(*shared_node as usize).unwrap();
+        let path1_i = path1_index_node.get(*shared_node as usize).unwrap();
+        let path2_i = path2_index_node.get(*shared_node as usize).unwrap();
 
-        let path1_islice = &path1_index.0[path1_i.0 as usize ..(path1_i.0 + path1_i.1) as usize];
-        let path2_islice = &path2_index.0[path2_i.0 as usize..(path2_i.0 + path2_i.1) as usize];
+        let path1_islice = &path1_index_index[path1_i.0 as usize ..(path1_i.0 + path1_i.1) as usize];
+        let path2_islice = &path2_index_index[path2_i.0 as usize..(path2_i.0 + path2_i.1) as usize];
 
         //println!("{:?} {:?} {:?}", k, k2, x);
         if (path1_i.1 > 1) || (path2_i.1 > 1){
@@ -178,6 +178,12 @@ pub fn all_combinations3<T>(a: &[T], b: &[T], node_id: &T) -> Vec<[T; 3]>
     }
 }
 
+
+/// Sort the nodes of paths
+/// This increases memory but should speedup the computation
+///
+/// TODO
+/// - Multithreading
 pub fn sort_nodes(paths: &Vec<NPath>) -> Vec<Vec<u32>>{
     let mut sort_nodes = Vec::with_capacity(paths.len());
     for path in paths.iter(){

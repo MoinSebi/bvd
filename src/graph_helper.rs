@@ -26,7 +26,7 @@ pub fn graph2pos(graph: & Arc<NGfa>) -> HashMap<String, Vec<usize>>{
 /// Creates a "node to index" index for each path
 ///
 /// This is mainly a wrapper function for multithreading
-pub fn node2index_wrapper(paths: &Vec<NPath>, threads: &usize) -> Vec<(Vec<u32>, Vec<(u32, u32)>)>{
+pub fn node2index_wrapper(paths: &Vec<NPath>, threads: &usize) -> (Vec<Vec<u32>>, Vec<Vec<(u32, u32)>>){
 
     // Number of path for computation + chunking in number of threads
     let f: Vec<usize> = (0..paths.len()).collect();
@@ -67,7 +67,10 @@ pub fn node2index_wrapper(paths: &Vec<NPath>, threads: &usize) -> Vec<(Vec<u32>,
     pre_result.sort_by_key(|a| a.0);
 
     // Only copy the real data (but in the order of
-    let result = pre_result.into_iter().map(|a| a.1).collect();
+    let result2: Vec<Vec<u32>> = pre_result.iter().map(|a| a.1.0.clone()).collect();
+    let result3: Vec<Vec<(u32, u32)>> = pre_result.into_iter().map(|a| a.1.1).collect();
 
-    return result
+
+
+    return (result2, result3)
 }
