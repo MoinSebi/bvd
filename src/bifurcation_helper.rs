@@ -1,4 +1,5 @@
 use std::cmp::{max, min};
+use std::time::Instant;
 use gfaR_wrapper::{NPath};
 use hashbrown::HashMap;
 
@@ -94,6 +95,8 @@ pub fn node2index_low_mem(vec: &Vec<u32>) -> (Vec<u32>, Vec<(u32, u32)>){
 
 
 
+use rayon::prelude::*;
+
 
 /// Get all the index pairs of all shared nodes
 ///
@@ -108,31 +111,33 @@ pub fn node2index_low_mem(vec: &Vec<u32>) -> (Vec<u32>, Vec<(u32, u32)>){
 /// - (index_from, index_to, node_id)
 ///
 /// Comment: This is input for the bifurcation algorithm. Not sure if unsafe code makes it faster...
-pub fn get_shared_index(path1_nodes: &Vec<u32>, path2_nodes: &Vec<u32>, path1_index_index: &Vec<u32>, path1_index_node: &Vec<(u32, u32)>,  path2_index_index: &Vec<u32>, path2_index_node: &Vec<(u32, u32)>) -> Vec<[u32; 3]> {
-
+pub fn get_shared_index(path1_nodes: &[u32], path2_nodes: &[u32], path1_index_index: &Vec<u32>, path1_index_node: &Vec<(u32, u32)>,  path2_index_index: &Vec<u32>, path2_index_node: &Vec<(u32, u32)>) -> Vec<[u32; 3]> {
     // Make intersection of the two node sets
-    let shared_nodes: Vec<u32> = vec_intersection(path1_nodes, path2_nodes);
+    let mut shared_nodes: Vec<u32> = vec_intersection(path1_nodes, path2_nodes);
 
-    let mut result = Vec::with_capacity(shared_nodes.len()*2);
-
+    // In my example this behaved like 1.3 scaling
+    let mut result = Vec::with_capacity((shared_nodes.len() as f64*1.5) as usize);
     for shared_node in shared_nodes.iter(){
-        let path1_i = path1_index_node.get(*shared_node as usize).unwrap();
-        let path2_i = path2_index_node.get(*shared_node as usize).unwrap();
+        let sn = *shared_node as usize;
+        let path1_i = path1_index_node.get(sn).unwrap();
+        let path2_i = path2_index_node.get(sn).unwrap();
 
         let path1_islice = &path1_index_index[path1_i.0 as usize ..(path1_i.0 + path1_i.1) as usize];
         let path2_islice = &path2_index_index[path2_i.0 as usize..(path2_i.0 + path2_i.1) as usize];
 
         //println!("{:?} {:?} {:?}", k, k2, x);
-        if (path1_i.1 > 1) || (path2_i.1 > 1){
-            result.extend(all_combinations3(path1_islice, path2_islice, &(*shared_node as u32)))
+        if (path1_i.1 == 1) && (path2_i.1 == 1){
+            result.push([path1_islice[0], path2_islice[0], *shared_node])
         } else {
-            result.push([path1_islice[0], path2_islice[0], *shared_node as u32])
+            result.extend(all_combinations3(path1_islice, path2_islice, &(*shared_node)))
         }
     }
+
+
     //Sort it afterwards
     // This sorting is very slow (same as intersection and index creation together)
-    result.sort();
-
+    //result.sort();
+    result.par_sort();
     result
 }
 
@@ -257,34 +262,28 @@ pub fn all_combinations<T>(a: & Vec<T>, b: & Vec<T>, path: &u32, bubble_id2: &u3
 /// assert_eq(v_intersection, vec![1,4])
 /// ```
 ///
-pub fn vec_intersection(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
-    let mut a2 = a.clone();
-    let mut b2 = b.clone();
-    a2.sort();
-    b2.sort();
-    let mut result = Vec::with_capacity(a.len()+b.len());
+pub fn vec_intersection(a: &[u32], b: &[u32]) -> Vec<u32> {
+    let mut result = Vec::with_capacity(a.len());
     let mut i = 0;
     let mut j = 0;
     let mut old = 0;
-    while i < a2.len() && j < b2.len() {
-        if a2[i] < b2[j] {
+    while i < a.len() && j < b.len() {
+        if a[i] < b[j] {
             i += 1;
-        } else if a2[i] > b2[j] {
+        } else if a[i] > b[j] {
             j += 1;
         } else {
-            if a2[i] != old {
-                result.push(a2[i]);
-                old = a2[i]
+            if a[i] != old {
+                result.push(a[i]);
+                old = a[i]
             }
             i += 1;
             j += 1;
         }
     }
-    result.shrink_to_fit();
+    //result.shrink_to_fit();
     result
 }
-
-
 
 
 

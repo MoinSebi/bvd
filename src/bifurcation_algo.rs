@@ -7,9 +7,10 @@ use std::time::Instant;
 use bifurcation::bifurcation_analysis_meta;
 use crossbeam_channel::unbounded;
 use gfaR_wrapper::NGfa;
-use log::{info};
+use log::{debug, info};
 use crate::bifurcation_helper::{all_combinations, all_combinations_self, get_all_pairs, get_shared_index, get_shared_index_low_mem, node2index, sort_nodes};
 use crate::helper::chunk_inplace;
+use rayon::prelude::*;
 
 
 /// Wrapper function using NGFA input and the precomnputed Hashsets and Node2pos hashmaps
@@ -194,44 +195,27 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, index: Vec<Vec<u32>>, index2: Vec
 
 
             for pair2 in chunk.iter(){
-                let start = Instant::now();
-
-                info!("This pair:  {:?}", &pair2);
                 let p3 = test2.get(pair2.0).unwrap();
                 let p31 = test3.get(pair2.0).unwrap();
 
                 let p4 = test2.get(pair2.1).unwrap();
                 let p41 = test3.get(pair2.1).unwrap();
 
-                // In my example this was 300 ms    let elapsed = start.elapsed();
 
 
-                let elapsed = start.elapsed();
+                let nodes1 = &apath.get(pair2.0).unwrap()[..];
+                let nodes2 =&apath.get(pair2.1).unwrap()[..];
 
+                let mut shared_index = get_shared_index(nodes1, nodes2, p3, p31, p4, p41);
                 // Debug format
-                println!("Debug: {:?}", elapsed);
-                //
-                //     // Debug format
-                //     println!("Debug: {:?}", elapsed);
-                let mut shared_index = get_shared_index(&apath.get(pair2.0).unwrap(), &apath.get(pair2.1).unwrap(), p3, p31, p4, p41);
-                let elapsed = start.elapsed();
-                shared_index.sort();
 
-                // Debug format
-                println!("Debug: {:?} {}", elapsed, shared_index.len());
-
-                let result = bifurcation_analysis_meta(&shared_index);
+                let mut result = bifurcation_analysis_meta(&shared_index);
 
                 //let result = Vec::new();
-                let elapsed = start.elapsed();
-                //
-                //     // Debug format
-                     println!("Debug231: {:?}", elapsed);
-                let f: HashSet<(u32, u32)> = HashSet::from_iter(result);
-                s1.send(f).expect("Help");    let elapsed = start.elapsed();
+                result.par_sort();
+                s1.send(result).expect("Help");
 
                 // Debug format
-                println!("Debug: {:?}", elapsed);
 
 
 
@@ -242,11 +226,12 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, index: Vec<Vec<u32>>, index2: Vec
     let mut res: HashSet<(u32, u32)> = HashSet::new();
     //let mut res = Vec::new();
     for _x in 0..pp{
+
         let data = r.recv().unwrap();
         res.extend(data.into_iter());
     }
     let mut res: Vec<(u32, u32)> = res.into_iter().collect();
-    res.sort();
+    res.par_sort();
     res
 
 }
