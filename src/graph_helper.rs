@@ -9,8 +9,8 @@ use crate::helper::chunk_inplace;
 /// Convert index in the graph to positional information
 /// Index based - not node based
 /// [10,30,31,32,45]
-pub fn graph2pos(graph: & Arc<NGfa>) -> HashMap<String, Vec<usize>>{
-    let mut result_hm: HashMap<String, Vec<usize>> = HashMap::new();
+pub fn graph2pos(graph: & Arc<NGfa>) -> Vec<Vec<usize>>{
+    let mut result_hm: Vec<Vec<usize>> = Vec::new();
     for x in graph.paths.iter(){
         let mut vec_pos: Vec<usize> = Vec::new();
         let mut position: usize = 0;
@@ -18,7 +18,7 @@ pub fn graph2pos(graph: & Arc<NGfa>) -> HashMap<String, Vec<usize>>{
             position += graph.nodes.get(y).unwrap().len;
             vec_pos.push(position);
         }
-        result_hm.insert(x.name.clone(), vec_pos);
+        result_hm.push(vec_pos);
     }
     result_hm
 }

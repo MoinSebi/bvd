@@ -90,7 +90,7 @@ pub fn bifurcation_bubble(graph: &Arc<NGfa>, threads: &usize, index1: Vec<Vec<u3
     }
 //    drop(graph);
     info!("Merge done");
-    res.sort_by(|a, b| a.3.partial_cmp(&b.3).unwrap());
+    //res.sort_by(|a, b| a.3.partial_cmp(&b.3).unwrap());
     return (res, resss);
 
 }

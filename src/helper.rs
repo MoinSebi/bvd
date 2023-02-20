@@ -1,3 +1,7 @@
+
+use gfaR_wrapper::NPath;
+use hashbrown::HashMap;
+
 /// Chunks our data set in chunks of similiar size (or close to it) with regards that chunks include complete bubble id
 ///
 /// Input:
@@ -14,7 +18,38 @@
 /// let f = vec![(1,2,3,4), (2,3,4,5), (4,5,6,7), (10,12,12,11)];
 /// let f2 = chunk_by_index(f, 4, 2);
 /// ``
-pub fn chunk_by_index(mut input:  Vec<(usize, u32, u32, u32)>, bubble_numb: u32, numb: u32) -> Vec<Vec<(usize, u32, u32, u32)>> {
+pub fn chunk_by_index(mut input:  &mut Vec<(usize, u32, u32, u32)>, bubble_numb: u32, numb: u32) -> Vec<&[(usize, u32, u32, u32)]> {
+    // Sort by bubble_id
+    input.sort_by_key(|a| (a.3));
+
+    // Initialize the chunk vector
+    let mut vec_new: Vec<&[(usize, u32, u32, u32)]> = Vec::with_capacity(numb as usize);
+
+    // Break each bubble by this
+    // ceil function: (3.14).ceil() = 4
+    let each_size = (bubble_numb as f64 /numb as f64).ceil() as usize;
+    let mut vec_hell = Vec::with_capacity(each_size);
+    let mut start = each_size.clone();
+    for (i, x) in input.iter().enumerate(){
+        if x.3 > ((start-1) as u32){
+            vec_hell.push(i);
+            start += each_size;
+        }
+    }
+    start = 0;
+    for x in vec_hell.iter(){
+        vec_new.push(&input[start..*x]);
+        start = x.clone();
+
+    }
+    vec_new.push(&input[start..]);
+
+
+    vec_new
+}
+
+
+pub fn chunk_by_index2(mut input:  Vec<(usize, u32, u32, u32)>, bubble_numb: u32, numb: u32) -> Vec<Vec<(usize, u32, u32, u32)>> {
     // Sort by bubble_id
     input.sort_by_key(|a| (a.3));
 
@@ -63,6 +98,25 @@ pub fn chunk_inplace<T>(it: Vec<T>, numb: usize) -> Vec<Vec<T>>{
     }
     vec_new
 
+}
+
+
+pub fn getSlice_test<'a>(data: &mut Vec<(usize, u32, u32, u32)>, path: &'a NPath, index2: &Vec<usize>) -> Vec<(&'a [u32], &'a [bool])>{
+    let mut slices = Vec::new();
+    let mut hellper = Vec::new();
+    for interval in data{
+
+        let slice_node = &path.nodes[(interval.1 + 1) as usize..interval.2 as usize];
+        let slice_dir = &path.dir[(interval.1 + 1) as usize..interval.2 as usize];
+        slices.push((slice_node, slice_dir));
+        let from_id: usize = index2[interval.1 as usize];
+        let mut to_id: usize = index2[interval.2 as usize - 1];
+        if interval.2 == interval.1 + 1 {
+            to_id = from_id.clone();
+        }
+        hellper.push((from_id, to_id));
+    }
+    return slices
 }
 
 

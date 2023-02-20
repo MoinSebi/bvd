@@ -14,9 +14,9 @@ use gfaR_wrapper::{NGfa};
 use log::{ info, warn};
 use crate::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
 use crate::graph_helper::{graph2pos, node2index_wrapper};
-use crate::helper::chunk_by_index;
+use crate::helper::{chunk_by_index, chunk_by_index2, getSlice_test};
 use crate::logging::newbuilder;
-use crate::writer::write_wrapper;
+use crate::writer::{solo_stats, write_wrapper};
 
 /// TODO:
 /// - Update merge function
@@ -125,18 +125,35 @@ fn main() {
         let (node_index_sort, node_to_index) = node2index_wrapper(&graph_f.paths, &threads);
         (intervals, bubbles) = bifurcation_bubble(&graph_f, &threads, node_index_sort, node_to_index);
     }
+    info!("slicer dicer");
+    // intervals.sort();
+    // let mut test = Vec::new();
+    // for x in intervals.iter(){
+    //     if x.0 != 0{
+    //         break
+    //     }
+    //     test.push(x.clone());
+    // }
+    // info!("slicer dicer2");
+    //
+    // getSlice_test(&mut test, &graph_f.paths[0], &g2p[0]);
+    // // Lets write bubble and other file at the same time
+    // info!("Number of intervals {}", intervals.len().clone());
+    // info!("Number of bubbles {}", bubbles.len());
+    //let chunks2 = chunk_by_index2(intervals.clone(), bubbles.len().clone() as u32, threads as u32);
 
-    // Lets write bubble and other file at the same time
-    info!("Number of intervals {}", intervals.len().clone());
-    info!("Number of bubbles {}", bubbles.len());
-    let chunks = chunk_by_index(intervals, bubbles.len().clone() as u32, threads as u32);
+    let chunks = chunk_by_index(&mut intervals, bubbles.len().clone() as u32, threads as u32);
     info!("Statistics and writing output");
     //
-    let g2p = graph2pos(&graph_f);
+    //let g2p = graph2pos(&graph_f);
 
     //
     // Write output
-    write_wrapper(chunks, g2p, &graph_f.paths, out_prefix, bubbles);
+    let g2p = graph2pos(&graph_f);
+    solo_stats(chunks[0].clone(),g2p, graph_f.paths.clone(), bubbles.clone());
+    //let f = graph_f.paths.clone();
+    //drop(graph_f);
+    //write_wrapper(chunks2, g2p, f, out_prefix, bubbles);
     //
     info!("Done");
 
