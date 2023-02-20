@@ -125,7 +125,7 @@ fn main() {
         let (node_index_sort, node_to_index) = node2index_wrapper(&graph_f.paths, &threads);
         (intervals, bubbles) = bifurcation_bubble(&graph_f, &threads, node_index_sort, node_to_index);
     }
-/*
+
     // Lets write bubble and other file at the same time
     info!("Number of intervals {}", intervals.len().clone());
     info!("Number of bubbles {}", bubbles.len());
@@ -139,7 +139,7 @@ fn main() {
     write_wrapper(chunks, g2p, &graph_f.paths, out_prefix, bubbles);
     //
     info!("Done");
-    */
+
 
 
 }

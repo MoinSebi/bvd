@@ -21,8 +21,10 @@ use rayon::prelude::*;
 pub fn bifurcation_bubble(graph: &Arc<NGfa>, threads: &usize, index1: Vec<Vec<u32>>, index2: Vec<Vec<(u32, u32)>>) -> (Vec<(usize, u32, u32, u32)>, Vec<(u32, u32)>){
     info!("Running bifurcation analysis");
     let mut result;
+    let index1 = Arc::new(index1);
+    let index2 = Arc::new(index2);
     // This returns all bubbles
-    result = bvd2(&graph, threads.clone(), index1, index2);
+    result = bvd2(&graph, threads.clone(), &index1, &index2);
 
 
 
@@ -42,24 +44,33 @@ pub fn bifurcation_bubble(graph: &Arc<NGfa>, threads: &usize, index1: Vec<Vec<u3
         let ff1 = result_arc.clone();
         let aa1 = graph.clone();
         let s1 = s.clone();
+        let index11 = index1.clone();
+        let index22 = index2.clone();
         let _handle = thread::spawn(move || {
             for y in x.iter(){
-                let paa = aa1.paths.get(*y).unwrap();
-                let path2index = node2index(paa);
                 let mut test = Vec::new();
-                for (i, (start, end)) in ff1.iter().enumerate(){
-                    if path2index.contains_key(&(*start as u32)) && path2index.contains_key(&(*end as u32)) {
-                        if start != end {
-                            let i1 = path2index.get(&(*start as u32)).unwrap();
-                            let i2 = path2index.get(&(*end as u32)).unwrap();
-                            if i1.len() == 1 && i2.len() == 1{
-                                test.push((*y, min(i1[0], i2[0]), max(i1[0], i2[0]), i as u32));
 
+                let index1_local = index11.get(*y).unwrap();
+                let index2_local = index22.get(*y).unwrap();
+
+                for (i, (start, end)) in ff1.iter().enumerate() {
+                    let vv = (index2_local.len() > *start as usize) && (index2_local.len() > *end as usize);
+                    if vv && index2_local[*start as usize] != (0, 0) && index2_local[*end as usize] != (0, 0) {
+                        let path1_i = index2_local.get(*start as usize).unwrap();
+                        let path2_i = index2_local.get(*end as usize).unwrap();
+
+                        let path1_islice = &index1_local[path1_i.0 as usize..(path1_i.0 + path1_i.1) as usize];
+                        let path2_islice = &index1_local[path2_i.0 as usize..(path2_i.0 + path2_i.1) as usize];
+
+
+                        if start != end {
+                            if path1_islice.len() == 1 && path2_islice.len() == 1 {
+                                test.push((*y, min(path1_islice[0], path2_islice[0]), max(path1_islice[0], path2_islice[0]), i as u32));
                             } else {
-                                test.extend(all_combinations(path2index.get(&(*start as u32)).unwrap(), path2index.get(&(*end as u32)).unwrap(), &(*y as u32), &(i as u32)));
+                                test.extend(all_combinations(path1_islice, path2_islice, &(*y as u32), &(i as u32)));
                             }
                         } else {
-                            test.extend(all_combinations_self(path2index.get(&(*start as u32)).unwrap(), &(*y as u32), &(i as u32)));
+                            test.extend(all_combinations_self(path2_islice, &(*y as u32), &(i as u32)));
                         }
                     }
                 }
@@ -159,7 +170,7 @@ pub fn bifurcation_bubble_lowmem(graph: &NGfa, threads: &usize) -> (Vec<(usize, 
 /// - Return (Name1, Name2) -> Vec<[[<start, stop>] (name1), [start, stop] (name2)]
 /// TODO:
 /// - Make outcome clear
-pub fn bvd2(graph: &Arc<NGfa>, threads: usize, index: Vec<Vec<u32>>, index2: Vec<Vec<(u32, u32)>>) -> Vec<(u32, u32)>{
+pub fn bvd2(graph: &Arc<NGfa>, threads: usize, arc3: &Arc<Vec<Vec<u32>>>, arc4: &Arc<Vec<Vec<(u32, u32)>>>) -> Vec<(u32, u32)>{
     info!("BVD indexing");
 
     let (s, r) = unbounded();
@@ -173,9 +184,6 @@ pub fn bvd2(graph: &Arc<NGfa>, threads: usize, index: Vec<Vec<u32>>, index2: Vec
     // Chunk the pairs
     let chunks = chunk_inplace(pairs2, threads);
 
-    // Shared references
-    let arc3 = Arc::new(index);
-    let arc4 = Arc::new(index2);
 
     let arc5 = Arc::new(new_vec);
 

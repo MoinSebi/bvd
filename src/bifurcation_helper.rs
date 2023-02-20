@@ -218,7 +218,7 @@ pub fn all_combinations2<T>(a: & Vec<T>, b: & Vec<T>, node_id: &T) -> Vec<[T; 3]
 
 /// **Get all non-self combinations of a 2D vector
 ///
-pub fn all_combinations_self<T>(a: & Vec<T>, path: &u32, bubble_id2: &u32) -> Vec<(usize, T, T, u32)>
+pub fn all_combinations_self<T>(a: &[T], path: &u32, bubble_id2: &u32) -> Vec<(usize, T, T, u32)>
     where T: Clone + Ord + Copy{
     {
         let mut p = Vec::new();
@@ -233,7 +233,7 @@ pub fn all_combinations_self<T>(a: & Vec<T>, path: &u32, bubble_id2: &u32) -> Ve
 
 /// **Get all combinations of two vectors**
 /// Generic version
-pub fn all_combinations<T>(a: & Vec<T>, b: & Vec<T>, path: &u32, bubble_id2: &u32) -> Vec<(usize, T, T, u32)>
+pub fn all_combinations<T>(a: & [T], b: & [T], path: &u32, bubble_id2: &u32) -> Vec<(usize, T, T, u32)>
     where T: Clone + Ord + Copy{
     {
         let mut p = Vec::new();
