@@ -142,7 +142,7 @@ fn main() {
     // info!("Number of bubbles {}", bubbles.len());
     //let chunks2 = chunk_by_index2(intervals.clone(), bubbles.len().clone() as u32, threads as u32);
 
-    let chunks = chunk_by_index(&mut intervals, bubbles.len().clone() as u32, threads as u32);
+    //let chunks = chunk_by_index(&mut intervals, bubbles.len().clone() as u32, threads as u32);
     info!("Statistics and writing output");
     //
     //let g2p = graph2pos(&graph_f);
@@ -150,7 +150,7 @@ fn main() {
     //
     // Write output
     let g2p = graph2pos(&graph_f);
-    solo_stats(chunks[0].clone(),g2p, graph_f.paths.clone(), bubbles.clone());
+    solo_stats(&intervals[..],g2p, graph_f.paths.clone(), bubbles.clone());
     //let f = graph_f.paths.clone();
     //drop(graph_f);
     //write_wrapper(chunks2, g2p, f, out_prefix, bubbles);
