@@ -1,10 +1,3 @@
-#[allow(non_snake_case)]
-pub mod bifurcation_algo;
-mod helper;
-mod logging;
-mod writer;
-mod graph_helper;
-mod bifurcation_helper;
 
 use clap::{Arg, App, AppSettings};
 use std::path::Path;
@@ -12,11 +5,12 @@ use std::process;
 use std::sync::Arc;
 use gfaR_wrapper::{NGfa};
 use log::{ info, warn};
-use crate::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
-use crate::graph_helper::{graph2pos, node2index_wrapper};
-use crate::helper::{chunk_by_index, chunk_by_index2, getSlice_test};
-use crate::logging::newbuilder;
-use crate::writer::{solo_stats, write_wrapper};
+use bvd::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
+use bvd::graph_helper::{graph2pos, node2index_wrapper};
+use bvd::helper::{chunk_by_index, chunk_by_index2, getSlice_test};
+use bvd::logging::newbuilder;
+use bvd::writer::{solo_stats, write_wrapper};
+
 
 /// TODO:
 /// - Update merge function
