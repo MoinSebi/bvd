@@ -9,7 +9,8 @@ fn file_doesnt_exist() -> Result<(), Box<dyn std::error::Error>> {
         .arg("--gfa")
         .arg("data/example_data/testGraph1.gfa")
         .arg("-o")
-        .arg("./data/example_data/test1/test1");    cmd.assert().stderr(predicate::str::contains("No file with such name"));
+        .arg("./data/example_data/test1/test1");
+    cmd.assert().stderr(predicate::str::contains("No file with such name"));
 
     Ok(())
 }
@@ -19,7 +20,9 @@ fn file_does_exist() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("bvd")?;
     cmd
         .arg("--gfa")
-        .arg("data/example_data/testGraph.gfa");
+        .arg("data/example_data/testGraph.gfa")
+        .arg("-o")
+        .arg("./data/example_data/test1/test1");
     cmd.assert().success();
     Ok(())
 }

@@ -1,15 +1,21 @@
-
-use clap::{Arg, App, AppSettings};
 use std::path::Path;
 use std::process;
-use std::sync::Arc;
-use gfaR_wrapper::{NGfa};
+//
+use clap::{Arg, App, AppSettings};
+use gfa_reader::{GraphWrapper, NCGfa, NCPath};
+// use std::path::Path;
+// use std::process;
+// use std::sync::Arc;
+// use gfa_reader::{GraphWrapper, NCGfa, NCPath};
+// use gfaR_wrapper::{NGfa};
 use log::{ info, warn};
-use bvd::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
-use bvd::graph_helper::{graph2pos, node2index_wrapper};
-use bvd::helper::{chunk_by_index, chunk_by_index2, getSlice_test};
+use bvd::bifurcation_algo::{aaaa, bifurcation_low, bvd_low_memory};
+//use bvd::bifurcation_algo::bifurcation_bubble_lowmem;
+// use bvd::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
+// use bvd::graph_helper::{graph2pos, node2index_wrapper};
+// use bvd::helper::{chunk_by_index, chunk_by_index2, getSlice_test};
 use bvd::logging::newbuilder;
-use bvd::writer::{solo_stats, write_wrapper};
+// use bvd::writer::{solo_stats, write_wrapper};
 
 
 /// TODO:
@@ -30,7 +36,7 @@ fn main() {
         .arg(Arg::new("gfa")
             .short('g')
             .long("gfa")
-            .about("Input GFA file")
+            .about("Input GFA file (v1)")
             .takes_value(true)
             .required(true))
 
@@ -82,7 +88,7 @@ fn main() {
     // Reading number of threads
     let threads: usize = matches.value_of("threads").unwrap().parse().unwrap();
 
-    // Reading the graph
+    // Get graph name
     let mut graph_file = "not_relevant";
     if matches.is_present("gfa") {
         if Path::new(matches.value_of("gfa").unwrap()).exists() {
@@ -93,15 +99,17 @@ fn main() {
         }
     }
 
-    // This is the prefix
+    // Get output prefix
     let out_prefix = matches.value_of("output").unwrap();
 
 
     // Read the graph - using this function if faster because if ignores all edges (not needed here)
+    // Also add the graph wrapper
     info!("Reading the graph");
-    let mut graph: NGfa = NGfa::new();
-    graph.from_file_direct2(graph_file);
-    let graph_f = Arc::new(graph);
+    let mut graph: NCGfa<()> = NCGfa::new();
+    graph.parse_gfa_file_direct(graph_file, false);
+    let mut wrapper: GraphWrapper<NCPath> = GraphWrapper::new();
+    wrapper.from_gfa(&graph.paths, " ");
     // For each path create a hashmap which returns for each index the exact position in the path
 
     // CLone the paths and path2index (not sure)
@@ -111,47 +119,61 @@ fn main() {
     info!("Index graph");
     let mut intervals: Vec<(usize, u32, u32, u32)> = Vec::new();
     let mut bubbles: Vec<(u32, u32)> = vec![];
+
+    // You recalculate the node2index every time
     if matches.is_present("low-memory") {
         info!("Running in low mem mode");
-        //(intervals, bubbles) = bifurcation_bubble_lowmem(&graph, &threads);
-    } else {
-        // Index node->index - more in the function comment
-        let (node_index_sort, node_to_index) = node2index_wrapper(&graph_f.paths, &threads);
-        (intervals, bubbles) = bifurcation_bubble(&graph_f, &threads, node_index_sort, node_to_index);
+
     }
-    info!("slicer dicer");
-    // intervals.sort();
-    // let mut test = Vec::new();
-    // for x in intervals.iter(){
-    //     if x.0 != 0{
-    //         break
-    //     }
-    //     test.push(x.clone());
+    let a = aaaa(&graph, &threads);
+    println!("rr{:?}", a);
+    let (mut a,b) = bifurcation_low(&graph, &threads);
+    println!("{:?}", b);
+    info!("BVD: Total number of bubbles: {}", b.len());
+    info!("BVD: Total number of intervals: {}", a.len());
+
+    a.sort();
+
+    info!("BVD: Identify bubbles structures");
+
+    // else {
+    //     // Index node->index - more in the function comment
+    //     let (node_index_sort, node_to_index) = node2index_wrapper(&graph_f.paths, &threads);
+    //     (intervals, bubbles) = bifurcation_bubble(&graph_f, &threads, node_index_sort, node_to_index);
     // }
-    // info!("slicer dicer2");
+    // info!("slicer dicer");
+    // // intervals.sort();
+    // // let mut test = Vec::new();
+    // // for x in intervals.iter(){
+    // //     if x.0 != 0{
+    // //         break
+    // //     }
+    // //     test.push(x.clone());
+    // // }
+    // // info!("slicer dicer2");
+    // //
+    // // getSlice_test(&mut test, &graph_f.paths[0], &g2p[0]);
+    // // // Lets write bubble and other file at the same time
+    // // info!("Number of intervals {}", intervals.len().clone());
+    // // info!("Number of bubbles {}", bubbles.len());
+    // //let chunks2 = chunk_by_index2(intervals.clone(), bubbles.len().clone() as u32, threads as u32);
     //
-    // getSlice_test(&mut test, &graph_f.paths[0], &g2p[0]);
-    // // Lets write bubble and other file at the same time
-    // info!("Number of intervals {}", intervals.len().clone());
-    // info!("Number of bubbles {}", bubbles.len());
-    //let chunks2 = chunk_by_index2(intervals.clone(), bubbles.len().clone() as u32, threads as u32);
-
-    //let chunks = chunk_by_index(&mut intervals, bubbles.len().clone() as u32, threads as u32);
-    info!("Statistics and writing output");
+    // //let chunks = chunk_by_index(&mut intervals, bubbles.len().clone() as u32, threads as u32);
+    // info!("Statistics and writing output");
+    // //
+    // //let g2p = graph2pos(&graph_f);
     //
-    //let g2p = graph2pos(&graph_f);
-
+    // //
+    // // Write output
+    // let g2p = graph2pos(&graph_f);
+    // solo_stats(&intervals[..],g2p, graph_f.paths.clone(), bubbles.clone());
+    // //let f = graph_f.paths.clone();
+    // //drop(graph_f);
+    // //write_wrapper(chunks2, g2p, f, out_prefix, bubbles);
+    // //
+    // info!("Done");
     //
-    // Write output
-    let g2p = graph2pos(&graph_f);
-    solo_stats(&intervals[..],g2p, graph_f.paths.clone(), bubbles.clone());
-    //let f = graph_f.paths.clone();
-    //drop(graph_f);
-    //write_wrapper(chunks2, g2p, f, out_prefix, bubbles);
     //
-    info!("Done");
-
-
 
 }
 
