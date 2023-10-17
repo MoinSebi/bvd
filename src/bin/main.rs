@@ -3,18 +3,22 @@ use std::process;
 //
 use clap::{Arg, App, AppSettings};
 use gfa_reader::{GraphWrapper, NCGfa, NCPath};
+use hashbrown::HashSet;
 // use std::path::Path;
 // use std::process;
 // use std::sync::Arc;
 // use gfa_reader::{GraphWrapper, NCGfa, NCPath};
 // use gfaR_wrapper::{NGfa};
 use log::{ info, warn};
-use bvd::bifurcation_algo::{aaaa, bifurcation_low, bvd_low_memory};
+use related_intervals::{make_nested, sort_vector};
+use bvd::bifurcation_algo::{aaaa, biiii};
+use bvd::helper::chunk_by_index2;
 //use bvd::bifurcation_algo::bifurcation_bubble_lowmem;
 // use bvd::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
 // use bvd::graph_helper::{graph2pos, node2index_wrapper};
 // use bvd::helper::{chunk_by_index, chunk_by_index2, getSlice_test};
 use bvd::logging::newbuilder;
+use bvd::writer::write_bubbles;
 // use bvd::writer::{solo_stats, write_wrapper};
 
 
@@ -125,16 +129,56 @@ fn main() {
         info!("Running in low mem mode");
 
     }
-    let a = aaaa(&graph, &threads);
-    println!("rr{:?}", a);
-    let (mut a,b) = bifurcation_low(&graph, &threads);
+    let a1 = aaaa(&graph, &threads);
+    println!("rr{:?}", a1);
+    let (mut a, b) = biiii(&graph, &threads);
+
+    println!("{:?}", a);
     println!("{:?}", b);
+    write_bubbles(&a1);
+    //println!("{:?}", b);
     info!("BVD: Total number of bubbles: {}", b.len());
     info!("BVD: Total number of intervals: {}", a.len());
 
-    a.sort();
+    //a.sort();
+
+    let mut hashset = HashSet::new();
+    let mut c = 0;
+    for mut x in a.iter_mut(){
+        for _ in x.1.iter_mut(){
+            c += 1;
+        }
+        sort_vector(&mut x.1);
+        println!("{:?}", x.1);
+        hashset.extend(make_nested(&x.1));
+    }
+
+
+    println!("total {}", c);
+    let mut flattened_with_index: Vec<_> = a
+        .iter()
+        .enumerate()
+        .flat_map(|(index, inner_vec)| {
+            inner_vec.1
+                .iter()
+                .map(move |&a| (index, a[0], a[1], a[2]))
+        })
+        .collect();
+    println!("{:?}", flattened_with_index);
+
+    flattened_with_index.sort_by_key(|a| (a.2));
+
+    let k = chunk_by_index2(& mut flattened_with_index, 2, 10);
+
+
+    // Take all intervals and check of relation
+    // Take all intervals and get the stats
+    // Stats -> Max, min size, number of traversals and intervals, number of children
+
 
     info!("BVD: Identify bubbles structures");
+
+    // Make this stuff
 
     // else {
     //     // Index node->index - more in the function comment

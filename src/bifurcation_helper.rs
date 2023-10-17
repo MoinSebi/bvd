@@ -1,30 +1,6 @@
-// use std::cmp::{max, min};
-// use std::time::Instant;
-// use hashbrown::HashMap;
-//
-// /// **Get all pairs of a vector**
-// ///
-// /// - Only upper "triangle"
-// /// - Clones the items
-// pub fn get_all_pairs<T>(vector: &Vec<T>) -> Vec<(T,T)>
-//     where T: Clone{
-//     let mut pairs: Vec<(T, T)> = Vec::new();
-//     let mut count = 0;
-//     for item1 in vector.iter(){
-//         for item2 in vector[count+1..].iter(){
-//             pairs.push((item1.clone(), item2.clone()));
-//         }
-//         count += 1;
-//     }
-//     pairs
-// }
-//
-//
-// //------------------INDEX--------------------------------------------------------------
-//
-
 use std::cmp::{max, min};
 use gfa_reader::NCPath;
+use itertools::Chunk;
 
 pub fn index_meta<'a, 'b>(path: &'b Vec<(&'a u32, &'a bool)>) -> (Vec<(u32)>, Vec<(u32, u32)>){
 
@@ -50,20 +26,20 @@ pub fn index_meta<'a, 'b>(path: &'b Vec<(&'a u32, &'a bool)>) -> (Vec<(u32)>, Ve
     let mut prev_val = f[0].0;
     let mut prev_index = 0;
 
-    let mut from_to = vec![(0, 0); (*m.0 as usize + 1) * 2];
+    let mut from_to = vec![(0, 0); (*m.0 as usize) * 2+2];
     // These are all the nodes
     for (i,x) in f.iter().enumerate(){
         // if it is not the same than the last value, add it to the list
         if x.0 != prev_val {
 
-            from_to[*prev_val.0 as usize + *prev_val.1 as usize] = (prev_index as u32, (i - prev_index) as u32);
+            from_to[*prev_val.0 as usize*2 + *prev_val.1 as usize] = (prev_index as u32, (i - prev_index) as u32);
             prev_index = i;
             prev_val = x.0;
         }
 
     }
     // Add again at the end
-    from_to[*prev_val.0 as usize + *prev_val.1 as usize] = (prev_index as u32, (f.len()- prev_index) as u32);
+    from_to[*prev_val.0 as usize*2 + *prev_val.1 as usize] = (prev_index as u32, (f.len()- prev_index) as u32);
 
     (index_list, from_to)
 
@@ -306,90 +282,29 @@ pub fn path2combi(path: &NCPath) -> Vec<(&u32, &bool)>{
 //
 /// **Get all non-self combinations of a 2D vector
 ///
-pub fn all_combinations_self<T>(a: &[T], path: &u32, bubble_id2: &u32) -> Vec<(usize, T, T, u32)>
-    where T: Clone + Ord + Copy{
-    {
+pub fn all_combinations_self(a: &[u32], bubble_id2: &u32) -> Vec<[u32; 3]>{
         let mut p = Vec::new();
         for (i, x) in a.iter().enumerate(){
             for y in i+1..a.len(){
-                p.push((*path as usize, *min(x, &a[y]), *max(x, &a[y]), *bubble_id2));
+                p.push([*min(x, &a[y]), *max(x, &a[y]), *bubble_id2]);
             }
         }
         p
     }
-}
+
 
 /// **Get all combinations of two vectors**
 /// Generic version
-pub fn all_combinations<T>(a: & [T], b: & [T], path: &u32, bubble_id2: &u32) -> Vec<(usize, T, T, u32)>
-    where T: Clone + Ord + Copy{
-    {
+pub fn all_combinations(a: & [u32], b: & [u32], bubble_id2: &u32) -> Vec<[u32; 3]>{
         let mut p = Vec::new();
         for  x in a.iter(){
             for y in b.iter(){
-                p.push((*path as usize, *min(x, y), *max(x,y), *bubble_id2));
+                p.push([*min(x, y), *max(x,y), *bubble_id2]);
             }
         }
         p
     }
-}
-//
-// /// Intersection of two vectors
-// ///
-// /// This is a fast implementation if the two vectors are already sorted (or close)
-// ///
-// /// Comment:
-// /// In our examples, sorting takes 1/3 of the total time. Since this function is run multiple times, it might efficient to sort beforehand and hand over the sorted vectors (nodes). This adds some additional memory.
-// ///
-// /// # Example
-// ///
-// /// ``` rust
-// /// use bvd::bifurcation_helper::vec_intersection;
-// /// let v1 = vec![1,2,3,4];
-// /// let v2 = vec![1,5,6,4];
-// /// let v_intersection = vec_intersection(&v1, &v2);
-// /// assert_eq!(v_intersection, vec![1,4])
-// /// ```
-// ///
-// pub fn vec_intersection(a: &[u32], b: &[u32]) -> Vec<u32> {
-//     let mut result = Vec::with_capacity(a.len());
-//     let mut i = 0;
-//     let mut j = 0;
-//     let mut old = 0;
-//     while i < a.len() && j < b.len() {
-//         if a[i] < b[j] {
-//             i += 1;
-//         } else if a[i] > b[j] {
-//             j += 1;
-//         } else {
-//             if a[i] != old {
-//                 result.push(a[i]);
-//                 old = a[i]
-//             }
-//             i += 1;
-//             j += 1;
-//         }
-//     }
-//     //result.shrink_to_fit();
-//     result
-// }
-//
-//
-//
-// #[cfg(test)]
-// /// Tests for some functions in this file.
-// mod tests {
-//     use crate::bifurcation_helper::vec_intersection;
-//
-//     #[test]
-//     fn vec_intersection_test() {
-//         let vec1 = vec![1,2,3,4,5,1];
-//         let vec2 = vec![1,6,7,8,98,1];
-//         let vec_intersection = vec_intersection(&vec1, &vec2);
-//         assert_eq!(vec_intersection.len(), 1);
-//     }
-// }
-//
-//
-//
-//
+
+
+
+

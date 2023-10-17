@@ -20,7 +20,7 @@ fn file_does_exist() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("bvd")?;
     cmd
         .arg("--gfa")
-        .arg("data/example_data/testGraph.gfa")
+        .arg("data/example_data/testGraph2.gfa")
         .arg("-o")
         .arg("./data/example_data/test1/test1");
     cmd.assert().success();

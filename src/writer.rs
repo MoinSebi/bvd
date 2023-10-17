@@ -1,5 +1,5 @@
 // use std::fs::File;
-// use std::io::{Write, BufWriter};
+use std::io::{Write, BufWriter};
 // use std::ptr::write;
 // use std::sync::{Arc, Mutex};
 // use std::thread;
@@ -7,6 +7,47 @@
 // use gfa_reader::NCPath;
 // use hashbrown::HashMap;
 // use crate::helper::mean;
+
+
+
+use std::fs::File;
+use rayon::prelude::*;
+use std::sync::Mutex;
+use gfa_reader::NCPath;
+
+pub fn write_bubbles(test: &Vec<(u32, u32)>) {
+    println!("{}", test.len());
+    let file_path = "output.txt";
+    let file = File::create(file_path).unwrap();
+    let buf_writer = Mutex::new(BufWriter::new(file));
+
+    // Use Rayon to parallelize the writing process with chunks of size 5
+    test.par_chunks(5).for_each(|chunk| {
+        let mut buf_writer = buf_writer.lock().unwrap();
+
+        for i in chunk {
+            buf_writer.write_all(format!("{}\t{}\n", i.0, i.1).as_bytes()).unwrap();
+        }
+
+        // Ensure the buffer is flushed for this chunk
+        buf_writer.flush().unwrap();
+    });
+}
+
+
+/// Wrapper function for traversal and bubble output files
+///
+/// Writing two files at the same time
+///
+/// Comment:
+/// - Sending data is not needed (maybe replace later)
+pub fn write_wrapper(data:  Vec<&[(usize, u32, u32, u32)]>, index2pos: Vec<Vec<usize>>, paths: Vec<NCPath>, filename_prefix: &str, bubbles: Vec<(u32, u32)>) {
+    // Create the two files
+
+
+    data.par_iter()
+        .map(|n|println!("daskdjhas"));
+}
 
 
 // /// Wrapper function for traversal and bubble output files

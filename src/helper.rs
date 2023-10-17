@@ -48,6 +48,38 @@ pub fn chunk_by_index(mut input:  &mut Vec<(usize, u32, u32, u32)>, bubble_numb:
     vec_new
 }
 
+pub fn chunk_by_index2(mut input:  &mut Vec<(usize, u32, u32, u32)>, bubble_numb: u32, number_chunks: u32) -> Vec<&[(usize, u32, u32, u32)]> {
+    // Sort by bubble_id
+    input.sort_by_key(|a| (a.3));
+
+    // Initialize the chunk vector
+    let mut vec_new: Vec<&[(usize, u32, u32, u32)]> = Vec::with_capacity(number_chunks as usize);
+
+    // Break each bubble by this
+    // ceil function: (3.14).ceil() = 4
+    let each_size = (bubble_numb as f64 / number_chunks as f64).ceil() as usize;
+    let mut vec_hell = Vec::with_capacity(each_size);
+    let mut start = each_size.clone();
+    for (i, x) in input.iter().enumerate(){
+        if x.3 > ((start-1) as u32){
+            vec_hell.push(i);
+            start += each_size;
+        }
+    }
+    start = 0;
+    for x in vec_hell.iter(){
+        vec_new.push(&input[start..*x]);
+        start = x.clone();
+
+    }
+    vec_new.push(&input[start..]);
+
+
+    vec_new
+}
+
+
+
 
 
 /// **Get chunks of a Vector**
