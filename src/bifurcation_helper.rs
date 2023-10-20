@@ -5,30 +5,30 @@ use itertools::Chunk;
 pub fn index_meta<'a, 'b>(path: &'b Vec<(&'a u32, &'a bool)>) -> (Vec<(u32)>, Vec<(u32, u32)>){
 
     /// Create a vector of the nodes
-    let mut f = Vec::with_capacity(path.len());
+    let mut result_vector = Vec::with_capacity(path.len());
 
 
-    let mut m = path.iter().max().unwrap().clone();
     let mut m: &(&u32, &bool) = &(&0, &true);
     for (i, x) in path.iter().enumerate(){
         // Push node and index
-        f.push((x,i));
+        result_vector.push((x, i));
         if x > m{
             m = x;
         }
     }
+
     // Sort by node
-    f.sort();
+    result_vector.sort();
 
     // Only return the index (sorted by node)
-    let index_list: Vec<_> = f.iter().map(|a| a.1 as u32).collect();
+    let index_list: Vec<_> = result_vector.iter().map(|a| a.1 as u32).collect();
 
-    let mut prev_val = f[0].0;
+    let mut prev_val = result_vector[0].0;
     let mut prev_index = 0;
 
     let mut from_to = vec![(0, 0); (*m.0 as usize) * 2+2];
     // These are all the nodes
-    for (i,x) in f.iter().enumerate(){
+    for (i,x) in result_vector.iter().enumerate(){
         // if it is not the same than the last value, add it to the list
         if x.0 != prev_val {
 
@@ -39,7 +39,7 @@ pub fn index_meta<'a, 'b>(path: &'b Vec<(&'a u32, &'a bool)>) -> (Vec<(u32)>, Ve
 
     }
     // Add again at the end
-    from_to[*prev_val.0 as usize*2 + *prev_val.1 as usize] = (prev_index as u32, (f.len()- prev_index) as u32);
+    from_to[*prev_val.0 as usize*2 + *prev_val.1 as usize] = (prev_index as u32, (result_vector.len()- prev_index) as u32);
 
     (index_list, from_to)
 

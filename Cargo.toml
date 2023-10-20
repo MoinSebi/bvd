@@ -7,9 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#gfaR = {path = "../gfaR"}
-#nested_intervals = {path = "/home/svorbrugg_local/Rust/nested_intervals"}
-#related_intervals = "0.1.0"
 related_intervals = {git = "https://github.com/MoinSebi/nested_intervals"}
 clap = "=3.0.0-beta.4"
 gfa-reader = {git = "https://github.com/MoinSebi/gfa-reader"}
@@ -39,4 +36,9 @@ harness = false
 [[bench]]
 name = "unions"
 harness = false
+
+[[bin]]
+name = "bvd"
+path = "src/bin/main.rs"
+
 

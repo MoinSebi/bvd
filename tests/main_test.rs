@@ -14,10 +14,10 @@ fn main_solo() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("bvd")?;
     fs::create_dir_all("/home/svorbrugg/code/bvd/data/example_data/test1")?;
     cmd
-        .arg("--gfa")
-        .arg("data/example_data/testGraph.gfa")
+        .arg("-g")
+        .arg("data/example_data/testGraph2.gfa")
         .arg("-o")
-        .arg("/home/svorbrugg/code/bvd/data/example_data/test1/test1");
+        .arg("/home/svorbrugg/code/bvd/data/example_data/test1/dsadasda");
 
     cmd.assert().success();
     //let foo: String = fs::read_to_string("/home/svorbrugg/code/bvd/data/example_data/test1/test1.bed").unwrap();

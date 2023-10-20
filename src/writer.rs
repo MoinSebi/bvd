@@ -1,3 +1,4 @@
+use std::fmt::format;
 // use std::fs::File;
 use std::io::{Write, BufWriter};
 // use std::ptr::write;
@@ -12,13 +13,14 @@ use std::io::{Write, BufWriter};
 
 use std::fs::File;
 use rayon::prelude::*;
-use std::sync::Mutex;
-use gfa_reader::NCPath;
+use std::sync::{Arc, Mutex};
+use gfa_reader::{NCGfa, NCNode, NCPath};
+use itertools::enumerate;
+use crate::helper::{chunk_by_index2, mean};
 
-pub fn write_bubbles(test: &Vec<(u32, u32)>) {
-    println!("{}", test.len());
-    let file_path = "output.txt";
-    let file = File::create(file_path).unwrap();
+pub fn write_bubbles(test: &Vec<(u32, u32)>, string: &str) {
+    let output_prefix = string.to_owned() + ".bubble.txt";
+    let file = File::create(output_prefix).unwrap();
     let buf_writer = Mutex::new(BufWriter::new(file));
 
     // Use Rayon to parallelize the writing process with chunks of size 5
@@ -26,7 +28,7 @@ pub fn write_bubbles(test: &Vec<(u32, u32)>) {
         let mut buf_writer = buf_writer.lock().unwrap();
 
         for i in chunk {
-            buf_writer.write_all(format!("{}\t{}\n", i.0, i.1).as_bytes()).unwrap();
+            buf_writer.write_all(format!("{}{}\t{}{}\n", i.0/2, if((i.0%2) == 1) {"+"} else {"-"} , i.1/2, if(i.0%2 == 1) {"+"} else {"-"}).as_bytes()).unwrap();
         }
 
         // Ensure the buffer is flushed for this chunk
@@ -48,6 +50,222 @@ pub fn write_wrapper(data:  Vec<&[(usize, u32, u32, u32)]>, index2pos: Vec<Vec<u
     data.par_iter()
         .map(|n|println!("daskdjhas"));
 }
+
+pub fn stats<'a>(aa: &Vec<(String, Vec<[u32;3]>)>, nc: &'a NCGfa<()>) -> Vec<(usize, usize, &'a [u32], &'a [bool], u32)> {
+
+    let mut gg = Vec::new();
+    for (i, x) in enumerate(aa.iter()){
+        let gfa2pos = gfa2pos(nc.paths[i].clone(), nc.nodes.clone());
+        let mut a23 = Vec::new();
+        for y in x.1.iter(){
+            let a = gfa2pos[y[0] as usize];
+            let b = gfa2pos[y[1] as usize];
+            let c = &nc.paths[i].nodes[y[0] as usize..y[1] as usize];
+            let c2 = &nc.paths[i].dir[y[0] as usize..y[1] as usize];
+
+            a23.push((a,b, c, c2, y[2]));
+        }
+        gg.extend(a23)
+
+    }
+
+    gg
+}
+
+pub fn gfa2pos(np: NCPath, nodes: Vec<NCNode<()>>) -> Vec<usize>{
+    let mut vv = Vec::new();
+    let mut old = 0;
+    for x in np.nodes.iter(){
+        vv.push(old + nodes.get(*x as usize - 1).unwrap().seq.len());
+        old += nodes.get(*x as usize - 1).unwrap().seq.len();
+    }
+    vv
+}
+
+pub fn tdsatda(input1: &Vec<(usize, usize, & [u32], &[bool], u32)>, input2: &Vec<(usize, u32, u32, u32)>){
+    let mut traversals = Vec::new();
+    //let mut sizes = Vec::new();
+    let intervals = 0;
+    let mut old_bub = 0;
+
+
+
+
+    let output_prefix = "bubble.txt";
+    let file = File::create(output_prefix).unwrap();
+    let buf_writer = Mutex::new(BufWriter::new(file));
+
+    for (i1,i2) in input1.iter().zip(input2.iter()){
+        let a = i1.2;
+        if old_bub != i2.3{
+            traversals.clear();
+            old_bub = i2.3
+
+        }
+        if ! traversals.contains(&(i1.2, i1.3)){
+            traversals.push((i1.2, i1.3))
+        }
+
+    }
+}
+
+
+
+pub fn all_one(input: &mut Vec<(usize, u32, u32, u32)>,  nc: & NCGfa<()>){
+    let max_bubble = input.last().unwrap().3;
+    let k = chunk_by_index2(input, max_bubble, 20);
+
+
+
+    let output_prefix = "bubble.txt";
+    let file = File::create(output_prefix).unwrap();
+    let buf_writer = BufWriter::new(file);
+    let arc_buf = Arc::new(Mutex::new(buf_writer));
+
+
+    let output_prefix2 = "interval.txt";
+    let file2 = File::create(output_prefix2).unwrap();
+    let buf_writer2 = BufWriter::new(file2);
+    let arc_buf2 = Arc::new(Mutex::new(buf_writer2));
+
+    let output_prefix3 = "bubbles.stats";
+    let file3 = File::create(output_prefix3).unwrap();
+    let buf_writer3 = BufWriter::new(file3);
+    let arc_buf3 = Arc::new(Mutex::new(buf_writer3));
+
+    let wr = gfapos_wrapper(&nc, &1);
+
+    let thread_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+
+    thread_pool.install(|| {
+        k.par_iter().for_each(|chunk| {
+            let mut traversals = Vec::new();
+            //let mut sizes = Vec::new();
+            let intervals = 0;
+            let mut start = true;
+            let mut old_bub = 0;
+            let mut sizes: Vec<usize> = Vec::new();
+            let mut all_trav = "".to_owned();
+            let mut all_interval = "".to_owned();
+            let mut all_bubble = "".to_owned();
+            let mut intervals = 0;
+            let mut bub = 0;
+
+
+            for y in chunk.iter() {
+                //println!("yy {:?}", y);
+                let gfa2pos = &wr[y.0];
+
+                let start_pos = gfa2pos[y.1 as usize];
+                let end_pos = gfa2pos[y.2 as usize - 1];
+                let size = end_pos - start_pos;
+                let nodes = &nc.paths[y.0 as usize].nodes[y.1 as usize..y.2 as usize -1];
+                let bools = &nc.paths[y.0 as usize].dir[y.1 as usize..y.2 as usize -1];
+                let traversal = (nodes, bools);
+                let mut traversal_number = 1;
+
+                bub = y.3;
+                if old_bub != bub {
+                    if !start {
+                        all_trav += &write_traversal(&traversals, old_bub);
+                        all_bubble  += &write_bubbles2(old_bub, intervals, traversals.len() as u32, sizes.iter().min().unwrap().clone() as u32, sizes.iter().max().unwrap().clone() as u32, mean(&sizes) as f64);
+
+
+
+
+                        intervals = 0;
+                        traversal_number = 1;
+                        sizes.clear();
+                        traversals.clear();
+                        old_bub = bub;
+                    } else {
+                        old_bub = bub;
+                    }
+                }
+                if traversals.contains(&traversal) {
+                    traversal_number = traversals.iter().position(|r| *r == traversal).unwrap();
+                } else {
+                    traversals.push(traversal);
+                    traversal_number = traversals.len();
+                }
+                intervals += 1;
+                start = false;
+
+
+
+                all_interval += &write_interval(y.0 as usize, start_pos, end_pos, &bub, &traversal_number);
+
+
+                sizes.push(size);
+
+            }
+            all_trav += &write_traversal(&traversals, bub);
+            all_bubble += &write_bubbles2(old_bub, intervals, traversals.len() as u32, sizes.iter().min().unwrap().clone() as u32, sizes.iter().max().unwrap().clone() as u32, mean(&sizes) as f64);
+
+
+
+
+            let mut dsada2 = arc_buf2.lock().unwrap();
+            write!(dsada2, "{}", all_interval).expect("helpa");
+
+            let mut dsada = arc_buf.lock().unwrap();
+            write!(dsada, "{}", all_bubble).expect("helpa");
+
+
+            let mut dsada3 = arc_buf3.lock().unwrap();
+            write!(dsada3, "{}", all_interval).expect("helpa");
+
+        });
+    });
+
+}
+
+pub fn gfapos_wrapper(graph: &NCGfa<()>, threads: &usize) -> Vec<Vec<usize>>{
+    let thread_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(*threads)
+        .build()
+        .unwrap();
+
+    let result: Vec<Vec<usize>> = thread_pool.install(|| {
+        graph.paths.par_iter().map(|x| gfa2pos(x.clone(), graph.nodes.clone())).collect()
+    });
+    result
+}
+
+
+pub fn write_traversal(input: &Vec<(&[u32], &[bool])>, bubble_id: u32) -> String{
+    let mut string_vec = Vec::new();
+    for (index, traversal) in input.iter().enumerate(){
+        let mut v = Vec::new();
+        for (y,z) in traversal.0.iter().zip(traversal.1.iter()){
+            v.push(format!("{}{}", y, if *z { "+" } else { "-" }));
+        }
+        string_vec.push(v);
+    }
+    let mut a = "".to_owned();
+    for (index, x) in string_vec.iter().enumerate(){
+        a += &format!("{}\t{}\t{}\n", bubble_id, index+1,  x.join(","));
+
+    }
+    a
+}
+
+
+pub fn write_bubbles2(bubble_id: u32, number_inter: u32, number_trav: u32, minlen: u32, maxlen: u32, avlen: f64) -> String{
+    format!("{}\t{}\t{}\t{}\t{}\t{}\n", bubble_id, number_inter, number_trav, minlen, maxlen, avlen)
+
+}
+
+
+
+pub fn write_interval(genome: usize, start: usize, end: usize, bubble_id: &u32, traversal_id: &usize) -> String {
+    format!("{}\t{}\t{}\t{}\t{}\n", genome, start, end, bubble_id, traversal_id)
+}
+
+
 
 
 // /// Wrapper function for traversal and bubble output files

@@ -3,6 +3,7 @@ use predicates::prelude::*; // Used for writing assertions
 use std::process::Command;
 
 #[test]
+/// Test of file does exist
 fn file_doesnt_exist() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("bvd")?;
     cmd
@@ -16,6 +17,7 @@ fn file_doesnt_exist() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+/// Check if a file does exist
 fn file_does_exist() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("bvd")?;
     cmd

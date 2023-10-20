@@ -11,14 +11,15 @@ use hashbrown::HashSet;
 // use gfaR_wrapper::{NGfa};
 use log::{ info, warn};
 use related_intervals::{make_nested, sort_vector};
-use bvd::bifurcation_algo::{aaaa, biiii};
+use bvd::bifurcation_algo::{bvd_wrapper, get_interval};
 use bvd::helper::chunk_by_index2;
 //use bvd::bifurcation_algo::bifurcation_bubble_lowmem;
 // use bvd::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
 // use bvd::graph_helper::{graph2pos, node2index_wrapper};
 // use bvd::helper::{chunk_by_index, chunk_by_index2, getSlice_test};
 use bvd::logging::newbuilder;
-use bvd::writer::write_bubbles;
+use bvd::relation::get_relations;
+use bvd::writer::{all_one, stats, tdsatda, write_bubbles};
 // use bvd::writer::{solo_stats, write_wrapper};
 
 
@@ -120,42 +121,30 @@ fn main() {
 
 
     // Bifurcation functions
-    info!("Index graph");
-    let mut intervals: Vec<(usize, u32, u32, u32)> = Vec::new();
-    let mut bubbles: Vec<(u32, u32)> = vec![];
 
     // You recalculate the node2index every time
     if matches.is_present("low-memory") {
         info!("Running in low mem mode");
 
     }
-    let a1 = aaaa(&graph, &threads);
-    println!("rr{:?}", a1);
-    let (mut a, b) = biiii(&graph, &threads);
 
-    println!("{:?}", a);
-    println!("{:?}", b);
-    write_bubbles(&a1);
-    //println!("{:?}", b);
-    info!("BVD: Total number of bubbles: {}", b.len());
-    info!("BVD: Total number of intervals: {}", a.len());
+    let (mut interval, bubbles) = get_interval(&graph, &threads);
+
+
+    write_bubbles(&bubbles, out_prefix);
+    info!("BVD: Total number of bubbles: {}", bubbles.len());
+    info!("BVD: Total number of intervals: {}", interval.len());
 
     //a.sort();
 
-    let mut hashset = HashSet::new();
-    let mut c = 0;
-    for mut x in a.iter_mut(){
-        for _ in x.1.iter_mut(){
-            c += 1;
-        }
-        sort_vector(&mut x.1);
-        println!("{:?}", x.1);
-        hashset.extend(make_nested(&x.1));
-    }
+    info!("BVD: Identify bubbles structures");
+    let mut c = get_relations(&interval, &threads);
 
 
-    println!("total {}", c);
-    let mut flattened_with_index: Vec<_> = a
+    info!("BVD: Number of relations {}", c.len());
+
+    // Flat out the data
+    let mut flattened_with_index: Vec<(usize, u32, u32, u32)> = interval
         .iter()
         .enumerate()
         .flat_map(|(index, inner_vec)| {
@@ -164,11 +153,21 @@ fn main() {
                 .map(move |&a| (index, a[0], a[1], a[2]))
         })
         .collect();
-    println!("{:?}", flattened_with_index);
 
-    flattened_with_index.sort_by_key(|a| (a.2));
+    flattened_with_index.sort_by_key(|a| (a.3));
+    //println!("{:?}", flattened_with_index);
+    let max_bubble = flattened_with_index.last().unwrap().3;
 
-    let k = chunk_by_index2(& mut flattened_with_index, 2, 10);
+    info!("pre");
+
+    all_one(&mut flattened_with_index, &graph);
+
+    info!("pre1");
+    //
+    // let k = chunk_by_index2(& mut flattened_with_index, max_bubble, 10);
+    //
+    //
+    // tdsatda(&ddd, &flattened_with_index);
 
 
     // Take all intervals and check of relation
