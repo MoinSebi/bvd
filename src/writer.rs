@@ -18,13 +18,13 @@ use gfa_reader::{NCGfa, NCNode, NCPath};
 use itertools::enumerate;
 use crate::helper::{chunk_by_index2, mean};
 
-pub fn write_bubbles(test: &Vec<(u32, u32)>, string: &str) {
+pub fn write_bubbles(data: &Vec<(u32, u32)>, string: &str) {
     let output_prefix = string.to_owned() + ".bubble.txt";
     let file = File::create(output_prefix).unwrap();
     let buf_writer = Mutex::new(BufWriter::new(file));
 
     // Use Rayon to parallelize the writing process with chunks of size 5
-    test.par_chunks(5).for_each(|chunk| {
+    data.par_chunks(1).for_each(|chunk| {
         let mut buf_writer = buf_writer.lock().unwrap();
 
         for i in chunk {
@@ -34,6 +34,28 @@ pub fn write_bubbles(test: &Vec<(u32, u32)>, string: &str) {
         // Ensure the buffer is flushed for this chunk
         buf_writer.flush().unwrap();
     });
+}
+
+
+pub fn write_index_intervals(data: &Vec<(String, Vec<[u32;3]>)>, output: &str){
+    let output_prefix = output.to_owned() + ".index.txt";
+    let file = File::create(output_prefix).unwrap();
+    let buf_writer = Mutex::new(BufWriter::new(file));
+
+    data.par_chunks(1).for_each(|chunk| {
+        let mut buf_writer = buf_writer.lock().unwrap();
+
+        for (path_name, indices) in chunk {
+            for i1  in indices.iter(){
+                buf_writer.write_all(format!("{}\t{}\t{}\t{}\n", path_name, i1[0], i1[1], i1[2]).as_bytes()).unwrap();
+
+            }
+        }
+
+        // Ensure the buffer is flushed for this chunk
+        buf_writer.flush().unwrap();
+    });
+
 }
 
 
@@ -164,15 +186,25 @@ pub fn all_one(input: &mut Vec<(usize, u32, u32, u32)>,  nc: & NCGfa<()>){
                 let size = end_pos - start_pos;
                 let nodes = &nc.paths[y.0 as usize].nodes[y.1 as usize..y.2 as usize -1];
                 let bools = &nc.paths[y.0 as usize].dir[y.1 as usize..y.2 as usize -1];
+                //let s = hash_vector(nodes, bools);
                 let traversal = (nodes, bools);
                 let mut traversal_number = 1;
 
                 bub = y.3;
                 if old_bub != bub {
                     if !start {
-                        all_trav += &write_traversal(&traversals, old_bub);
-                        all_bubble  += &write_bubbles2(old_bub, intervals, traversals.len() as u32, sizes.iter().min().unwrap().clone() as u32, sizes.iter().max().unwrap().clone() as u32, mean(&sizes) as f64);
+                        // all_trav += &write_traversal(&traversals, old_bub);
+                        // all_bubble  += &write_bubbles2(old_bub, intervals, traversals.len() as u32, sizes.iter().min().unwrap().clone() as u32, sizes.iter().max().unwrap().clone() as u32, mean(&sizes) as f64);
 
+                        //let fall_trav = &write_traversal(&traversals, old_bub);
+                        //let fall_bubble  = &write_bubbles2(old_bub, intervals, traversals.len() as u32, sizes.iter().min().unwrap().clone() as u32, sizes.iter().max().unwrap().clone() as u32, mean(&sizes) as f64);
+
+
+                        // let mut dsada2 = arc_buf2.lock().unwrap();
+                        // write!(dsada2, "{}", fall_trav).expect("helpa");
+                        //
+                        // let mut dsada = arc_buf.lock().unwrap();
+                        // write!(dsada, "{}", fall_bubble).expect("helpa");
 
 
 
@@ -188,6 +220,8 @@ pub fn all_one(input: &mut Vec<(usize, u32, u32, u32)>,  nc: & NCGfa<()>){
                 if traversals.contains(&traversal) {
                     traversal_number = traversals.iter().position(|r| *r == traversal).unwrap();
                 } else {
+                    let mut dsada2 = arc_buf2.lock().unwrap();
+                    write!(dsada2, "{}\t{}\t{}", bub, traversal_number, "dasds").expect("helpa");
                     traversals.push(traversal);
                     traversal_number = traversals.len();
                 }
@@ -196,27 +230,31 @@ pub fn all_one(input: &mut Vec<(usize, u32, u32, u32)>,  nc: & NCGfa<()>){
 
 
 
-                all_interval += &write_interval(y.0 as usize, start_pos, end_pos, &bub, &traversal_number);
+                //all_interval += &write_interval(y.0 as usize, start_pos, end_pos, &bub, &traversal_number);
+                let fall_interval = &write_interval(y.0 as usize, start_pos, end_pos, &bub, &traversal_number);
 
+
+                // let mut dsada3 = arc_buf3.lock().unwrap();
+                // write!(dsada3, "{}", fall_interval).expect("helpa");
 
                 sizes.push(size);
 
             }
-            all_trav += &write_traversal(&traversals, bub);
-            all_bubble += &write_bubbles2(old_bub, intervals, traversals.len() as u32, sizes.iter().min().unwrap().clone() as u32, sizes.iter().max().unwrap().clone() as u32, mean(&sizes) as f64);
-
-
-
-
-            let mut dsada2 = arc_buf2.lock().unwrap();
-            write!(dsada2, "{}", all_interval).expect("helpa");
-
-            let mut dsada = arc_buf.lock().unwrap();
-            write!(dsada, "{}", all_bubble).expect("helpa");
-
-
-            let mut dsada3 = arc_buf3.lock().unwrap();
-            write!(dsada3, "{}", all_interval).expect("helpa");
+            // all_trav += &write_traversal(&traversals, bub);
+            // all_bubble += &write_bubbles2(old_bub, intervals, traversals.len() as u32, sizes.iter().min().unwrap().clone() as u32, sizes.iter().max().unwrap().clone() as u32, mean(&sizes) as f64);
+            //
+            //
+            //
+            //
+            // let mut dsada2 = arc_buf2.lock().unwrap();
+            // write!(dsada2, "{}", all_interval).expect("helpa");
+            //
+            // let mut dsada = arc_buf.lock().unwrap();
+            // write!(dsada, "{}", all_bubble).expect("helpa");
+            //
+            //
+            // let mut dsada3 = arc_buf3.lock().unwrap();
+            // write!(dsada3, "{}", all_interval).expect("helpa");
 
         });
     });
@@ -233,6 +271,41 @@ pub fn gfapos_wrapper(graph: &NCGfa<()>, threads: &usize) -> Vec<Vec<usize>>{
         graph.paths.par_iter().map(|x| gfa2pos(x.clone(), graph.nodes.clone())).collect()
     });
     result
+}
+
+pub fn trav_sum(i1: &[u32], i2: &[bool]) -> String{
+    let mut a = 0;
+    if let Some(value) = i1.iter().max() {
+        a = *value;
+    } else {
+        a = 0
+    }
+    let l = a.to_string();
+    l
+}
+
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
+pub fn hash_vector(vec: &[u32], vec2: &[bool]) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    vec.hash(&mut  hasher);
+    vec2.hash(&mut hasher);
+    hasher.finish()
+}
+
+pub fn hash_vector2(vec: &[(u32, bool)]) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    vec.hash(&mut  hasher);
+    hasher.finish()
+}
+
+pub fn traversal_to_string(i1: &[u32], i2: &[bool]) -> String{
+    let mut v = Vec::new();
+    for (y,z) in i1.iter().zip(i2.iter()){
+        v.push(format!("{}{}", y, if *z { "+" } else { "-" }));
+    }
+    v.join(",")
 }
 
 

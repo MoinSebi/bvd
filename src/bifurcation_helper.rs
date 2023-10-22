@@ -84,6 +84,13 @@ pub fn path2combi(path: &NCPath) -> Vec<(&u32, &bool)>{
 
 }
 
+pub fn path2combi2(path: &NCPath) -> Vec<(u32, bool)>{
+    //let mut ff = Vec::with_capacity(path.nodes.len());
+    let mut ff: Vec<(u32, bool)> = path.nodes.iter().cloned().zip(path.dir.iter().cloned()).collect();
+    ff
+
+}
+
 
 
 
