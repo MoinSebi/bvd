@@ -2,6 +2,81 @@ use std::cmp::{max, min};
 use gfa_reader::NCPath;
 use itertools::Chunk;
 
+
+#[derive(Debug)]
+pub struct index_metadata {
+    pub index: Vec<u32>,
+    pub from_to: Vec<(u32, u32)>,
+    pub min_val: u32,
+}
+
+impl index_metadata {
+    pub fn get(&self, num: &u32) -> &[u32]{
+
+        let (start, end) = self.from_to[*num as usize - self.min_val as usize];
+        return &self.index[start as usize..end as usize]
+    }
+
+    pub fn new() -> index_metadata {
+        index_metadata {
+            index: Vec::new(),
+            from_to: Vec::new(),
+            min_val: 0,
+        }
+    }
+
+
+
+    pub fn from_path(&mut self, path: & Vec<u32>){
+
+        // Create a vector of the nodes
+
+        let mut result_vector =path.iter().enumerate().map(|(i, x)| (x, i)).collect::<Vec<_>>();
+
+
+        // Sort by node
+        result_vector.sort();
+        // Max val
+        let mut max_val = result_vector.last().unwrap().0;
+
+        // Min val
+        let mut min_val = result_vector.first().unwrap().0;
+        self.min_val = min_val - 1;
+
+
+        // Only return the index (sorted by node)
+        self.index = result_vector.iter().map(|a| a.1 as u32).collect();
+
+
+        let mut prev_val = result_vector[0].0;
+        let mut prev_index = 0;
+
+        let mut from_to = vec![(0, 0); *max_val as usize + 1 - self.min_val as usize];
+
+
+        let mut index = 0;
+        // These are all the nodes
+        for (index_enumerate, dir_nodex) in result_vector.iter().enumerate(){
+            // if it is not the same than the last value, add it to the list
+            if dir_nodex.0 != prev_val {
+                index = *prev_val as usize - self.min_val as usize;
+                from_to[index] = (prev_index as u32, index_enumerate as u32);
+
+                prev_index = index_enumerate;
+                prev_val = dir_nodex.0;
+            }
+
+        }
+        // Add again at the end
+        index = *prev_val as usize - self.min_val as usize;
+
+        from_to[index] = (prev_index as u32, result_vector.len() as u32);
+
+        self.from_to = from_to;
+
+    }
+}
+
 pub fn index_meta<'a, 'b>(path: &'b Vec<(&'a u32, &'a bool)>) -> (Vec<(u32)>, Vec<(u32, u32)>){
 
     /// Create a vector of the nodes
@@ -73,6 +148,32 @@ pub fn intersection_two_pointer<'a>(v1: &'a Vec<(&'a u32, &'a bool)>, v2: &'a Ve
     res
 }
 
+/// Intersection of two vectors using two-pointer approach
+///
+/// Comment: Since multiple vectors can be possible, add these if needed
+pub fn intersection_two_pointer2<'a>(v1: &'a Vec<( u32,  bool)>, v2: &'a Vec<(u32,  bool)>) -> Vec<( u32, bool)> {
+    let mut res = Vec::with_capacity(v1.len().min(v2.len()));
+    let mut i = 0;
+    let mut j = 0;
+
+    while i < v1.len() && j < v2.len() {
+        if v1[i] == v2[j] {
+            if res.len() == 0{
+                res.push(v1[i]);
+            } else if res.last().unwrap() != &v1[i] {
+                res.push(v1[i]);
+            }
+            i += 1;
+            j += 1;
+        } else if v1[i] < v2[j] {
+            i += 1;
+        } else {
+            j += 1;
+        }
+    }
+    res
+}
+
 
 /// Helper function
 ///
@@ -89,6 +190,13 @@ pub fn path2combi2(path: &NCPath) -> Vec<(u32, bool)>{
     let mut ff: Vec<(u32, bool)> = path.nodes.iter().cloned().zip(path.dir.iter().cloned()).collect();
     ff
 
+}
+
+/// Path compressed
+///
+/// Combine nodes and direction to one value (max node is now u32::Max/2)
+pub fn path2nodedir(path: &NCPath) -> Vec<u32>{
+    path.nodes.iter().zip(path.dir.iter()).map(|x| *x.0*2 + *x.1 as u32).collect()
 }
 
 

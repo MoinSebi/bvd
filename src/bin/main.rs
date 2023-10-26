@@ -1,26 +1,16 @@
 use std::path::Path;
 use std::process;
+use std::time::Instant;
 //
 use clap::{Arg, App, AppSettings};
 use gfa_reader::{GraphWrapper, NCGfa, NCPath};
-use hashbrown::HashSet;
-// use std::path::Path;
-// use std::process;
-// use std::sync::Arc;
-// use gfa_reader::{GraphWrapper, NCGfa, NCPath};
-// use gfaR_wrapper::{NGfa};
 use log::{ info, warn};
 use related_intervals::{make_nested, sort_vector};
-use bvd::bifurcation_algo::{bubble_wrapper, bubble_wrapper2, bvd_total, jooo};
-use bvd::helper::chunk_by_index2;
-//use bvd::bifurcation_algo::bifurcation_bubble_lowmem;
-// use bvd::bifurcation_algo::{bifurcation_bubble, bifurcation_bubble_lowmem};
-// use bvd::graph_helper::{graph2pos, node2index_wrapper};
-// use bvd::helper::{chunk_by_index, chunk_by_index2, getSlice_test};
+use bvd::bifurcation_algo::{bubble_wrapper, bubble_wrapper_highmem, bvd_total, index_wrapper, };
 use bvd::logging::newbuilder;
+use bvd::pansv::{pansv_plus_index, pansv_index, pansv, pansv_plus};
 use bvd::relation::get_relations;
-use bvd::writer::{all_one, stats, tdsatda, write_bubbles, write_index_intervals};
-// use bvd::writer::{solo_stats, write_wrapper};
+use bvd::writer::{write_bubbles, write_index_intervals};
 
 
 /// TODO:
@@ -153,14 +143,20 @@ fn main() {
         bubbles = bubble_wrapper(&graph, &threads);
 
     } else {
-        let f = jooo(&graph);
+        info!("BVD: Create index");
+        let (path_merges, index) = index_wrapper(&graph);
         info!("BVD: Identify bubbles");
-        bubbles = bubble_wrapper2(&graph, &threads, &f.0, &f.1);
+        let start = Instant::now();
 
+        bubbles = bubble_wrapper_highmem(&graph, &threads, &path_merges, &index);
+        let end = start.elapsed();
+        //println!("Time: {:?}", end);
     }
 
-    info!("BVD: Number of bubbles {}", bubbles.len());
 
+    info!("BVD: Number of bubbles {}", bubbles.len());
+    // let f2 = jooo2(&graph);
+    // info!("dasjdhakjhdakjhdka");
 
     info!("BVD: Write bubbles");
     write_bubbles(&bubbles, out_prefix);
@@ -185,11 +181,11 @@ fn main() {
     }
 
 
-    //a.sort();
-    //
+    // interval.sort();
+
     // info!("BVD: Identify bubbles structures");
-    // // let mut c = get_relations(&interval, &threads);
-    // // info!("BVD: Number of relations {}", c.len());
+    // let mut c = get_relations(&interval, &threads);
+    // info!("BVD: Number of relations {}", c.len());
     //
     // // Flat out the data
     // let mut flattened_with_index: Vec<(usize, u32, u32, u32)> = interval

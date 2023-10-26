@@ -59,6 +59,27 @@ pub fn write_index_intervals(data: &Vec<(String, Vec<[u32;3]>)>, output: &str){
 }
 
 
+pub fn write_index_intervals2(data: &Vec<[u32;3]>, output: &str){
+    let output_prefix = output.to_owned() + ".index.txt";
+    let file = File::create(output_prefix).unwrap();
+    let buf_writer = Mutex::new(BufWriter::new(file));
+
+    data.par_chunks(1).for_each(|chunk| {
+        let mut buf_writer = buf_writer.lock().unwrap();
+
+        for i1 in chunk {
+            buf_writer.write_all(format!("{}\t{}\t{}\t{}\n", "dasda", i1[0], i1[1], i1[2]).as_bytes()).unwrap();
+
+
+        }
+
+        // Ensure the buffer is flushed for this chunk
+        buf_writer.flush().unwrap();
+    });
+
+}
+
+
 /// Wrapper function for traversal and bubble output files
 ///
 /// Writing two files at the same time
