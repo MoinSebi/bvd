@@ -8,7 +8,7 @@ use log::{ info, warn};
 use bvd::bifurcation_algo::{bubble_wrapper, bubble_wrapper_highmem, bvd_total, index_wrapper, };
 use bvd::graph_helper::{ident_pairs, ident_pairs2, load_data2, split_string};
 use bvd::logging::newbuilder;
-use bvd::pansv::{pansv_index, pansv};
+use bvd::pansv::{pansv_index, pansv, pansv_plus_index, pansv_plus};
 use bvd::writer::{write_bubbles, write_index_intervals};
 
 
@@ -58,6 +58,18 @@ fn main() {
             .takes_value(true)
         )
 
+        .help_heading("Algorithm options")
+        .arg(Arg::new("panSV")
+            .long("pansv")
+            .about("Run panSV algorithm [default: off]")
+        )
+        .arg(Arg::new("panSV plus")
+            .long("pansv-plus")
+            .about("Run panSV plus algorithm [default: off]")
+        )
+
+
+
         .help_heading("Output options")
         .arg(Arg::new("output")
             .display_order(1)
@@ -72,6 +84,9 @@ fn main() {
         .arg(Arg::new("intervals")
             .long("intervals")
             .about("Output intervals file only [default: off]"))
+
+
+        // Hidden
         .arg(Arg::new("Debug1")
             .long("debug1")
             .about("Test1")
@@ -124,6 +139,8 @@ fn main() {
     let pairs = matches.value_of("Pair").unwrap_or("all");
     let reference = matches.value_of("Reference").unwrap_or("all");
     let pair_list = matches.value_of("Pair list").unwrap_or("all");
+    let pansv_flag = matches.is_present("panSV");
+    let pansvp_flag = matches.is_present("panSV plus");
 
 
 
@@ -163,47 +180,54 @@ fn main() {
     wrapper.from_gfa(&graph.paths, " ");
 
 
-    let f: Vec<usize> = (0..graph.paths.len()).collect();
-    let mut pairs_index = get_all_pairs(&f);
-    if reference != "all"{
-        ident_pairs(&mut pairs_index, reference, &graph);
-    }
+    let mut bubbles: Vec<(u32, u32)> = Vec::new();
+    if pansvp_flag || pansv_flag {
 
-    if pairs != "all"{
-        let st = split_string(pairs);
-        ident_pairs2(&mut pairs_index, &vec![st], &graph);
-
-    }
-
-    if pair_list != "all"{
-        let st = load_data2(pair_list);
-        ident_pairs2(&mut pairs_index, &st, &graph);
-
-    }
-
-    info!("BVD: Number of paths {}", graph.paths.len());
-    info!("BVD: Number of pairs {}", (pairs_index.len()));
-
-
-    // Bifurcation functions
-
-    let mut bubbles = Vec::new();
-    // You recalculate the node2index every time
-    if matches.is_present("low-memory") {
-        info!("BVD: Running in low mem mode (low-memory)");
-        bubbles = bubble_wrapper(&graph, &threads);
-
+        if pansvp_flag {
+            let index = pansv_index(&graph);
+            bubbles = pansv(&graph, &index, &threads);
+        } else {
+            let index = pansv_plus_index(&graph);
+            bubbles = pansv_plus(&graph, &index, &threads);
+        }
     } else {
-        info!("BVD: Create index");
-        let (path_merges, index) = index_wrapper(&graph);
-        info!("BVD: Identify bubbles");
-        let start = Instant::now();
+        let f: Vec<usize> = (0..graph.paths.len()).collect();
+        let mut pairs_index = get_all_pairs(&f);
+        if reference != "all" {
+            ident_pairs(&mut pairs_index, reference, &graph);
+        }
 
-        bubbles = bubble_wrapper_highmem(&graph, &threads, &path_merges, &index, &pairs_index);
-        let end = start.elapsed();
-        //println!("Time: {:?}", end);
+        if pairs != "all" {
+            let st = split_string(pairs);
+            ident_pairs2(&mut pairs_index, &vec![st], &graph);
+        }
+
+        if pair_list != "all" {
+            let st = load_data2(pair_list);
+            ident_pairs2(&mut pairs_index, &st, &graph);
+        }
+
+        info!("BVD: Number of paths {}", graph.paths.len());
+        info!("BVD: Number of pairs {}", (pairs_index.len()));
+
+
+        // Bifurcation functions
+
+        // You recalculate the node2index every time
+        if matches.is_present("low-memory") {
+            info!("BVD: Running in low mem mode (low-memory)");
+            bubbles = bubble_wrapper(&graph, &threads);
+        } else {
+            info!("BVD: Create index");
+            let (path_merges, index) = index_wrapper(&graph);
+            info!("BVD: Identify bubbles");
+            let start = Instant::now();
+
+            bubbles = bubble_wrapper_highmem(&graph, &threads, &path_merges, &index, &pairs_index);
+            let end = start.elapsed();
+            //println!("Time: {:?}", end);
+        }
     }
-
 
     info!("BVD: Number of bubbles {}", bubbles.len());
 
