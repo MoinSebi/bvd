@@ -1,15 +1,14 @@
 use std::path::Path;
 use std::process;
 use std::time::Instant;
-//
+use bifurcation::helper::get_all_pairs;
 use clap::{Arg, App, AppSettings};
 use gfa_reader::{GraphWrapper, NCGfa, NCPath};
 use log::{ info, warn};
-use related_intervals::{make_nested, sort_vector};
 use bvd::bifurcation_algo::{bubble_wrapper, bubble_wrapper_highmem, bvd_total, index_wrapper, };
+use bvd::graph_helper::{ident_pairs, ident_pairs2, load_data2, split_string};
 use bvd::logging::newbuilder;
-use bvd::pansv::{pansv_plus_index, pansv_index, pansv, pansv_plus};
-use bvd::relation::get_relations;
+use bvd::pansv::{pansv_index, pansv};
 use bvd::writer::{write_bubbles, write_index_intervals};
 
 
@@ -35,6 +34,29 @@ fn main() {
             .takes_value(true)
             .required(true))
 
+        .help_heading("Modification")
+        .arg(Arg::new("Reference")
+            .short('r')
+            .long("reference")
+            .takes_value(true)
+            .about("Only compute this reference")
+
+        )
+        .arg(Arg::new("PanSN")
+            .short('p')
+            .long("pansn")
+            .about("Names should be in PanSN format [default: off]")
+        )
+        .arg(Arg::new("Pair")
+            .long("pair")
+            .about("Only these pairs should be used")
+            .takes_value(true)
+        )
+        .arg(Arg::new("Pair list")
+            .long("pair-list")
+            .about("Provide a file with all pairs you are interested")
+            .takes_value(true)
+        )
 
         .help_heading("Output options")
         .arg(Arg::new("output")
@@ -98,6 +120,14 @@ fn main() {
     let threads: usize = matches.value_of("threads").unwrap().parse().unwrap();
     info!("BVD: Number of threads: {}", threads);
 
+
+    let pairs = matches.value_of("Pair").unwrap_or("all");
+    let reference = matches.value_of("Reference").unwrap_or("all");
+    let pair_list = matches.value_of("Pair list").unwrap_or("all");
+
+
+
+
     // Get graph name
     let mut graph_file = "not_relevant";
     if matches.is_present("gfa") {
@@ -108,6 +138,8 @@ fn main() {
             process::exit(0x0100);
         }
     }
+
+
 
     let mut bubbles_only = matches.is_present("bubbles");
     let mut intervals_only = matches.is_present("intervals");
@@ -130,8 +162,27 @@ fn main() {
     let mut wrapper: GraphWrapper<NCPath> = GraphWrapper::new();
     wrapper.from_gfa(&graph.paths, " ");
 
+
+    let f: Vec<usize> = (0..graph.paths.len()).collect();
+    let mut pairs_index = get_all_pairs(&f);
+    if reference != "all"{
+        ident_pairs(&mut pairs_index, reference, &graph);
+    }
+
+    if pairs != "all"{
+        let st = split_string(pairs);
+        ident_pairs2(&mut pairs_index, &vec![st], &graph);
+
+    }
+
+    if pair_list != "all"{
+        let st = load_data2(pair_list);
+        ident_pairs2(&mut pairs_index, &st, &graph);
+
+    }
+
     info!("BVD: Number of paths {}", graph.paths.len());
-    info!("BVD: Number of pairs {}", (graph.paths.len()*(graph.paths.len()-1))/2);
+    info!("BVD: Number of pairs {}", (pairs_index.len()));
 
 
     // Bifurcation functions
@@ -148,15 +199,19 @@ fn main() {
         info!("BVD: Identify bubbles");
         let start = Instant::now();
 
-        bubbles = bubble_wrapper_highmem(&graph, &threads, &path_merges, &index);
+        bubbles = bubble_wrapper_highmem(&graph, &threads, &path_merges, &index, &pairs_index);
         let end = start.elapsed();
         //println!("Time: {:?}", end);
     }
 
 
     info!("BVD: Number of bubbles {}", bubbles.len());
-    // let f2 = jooo2(&graph);
-    // info!("dasjdhakjhdakjhdka");
+
+    // PANSV
+    // let index = pansv_index(&graph);
+    // let f = pansv(&graph, &index);
+    // info!("BVD: Write bubbles");
+    // write_bubbles(&f, "hhh");
 
     info!("BVD: Write bubbles");
     write_bubbles(&bubbles, out_prefix);

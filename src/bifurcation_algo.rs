@@ -161,12 +161,10 @@ use itertools::all;
 
 /// Get all bubbles in the graph
 ///
-pub fn bubble_wrapper_highmem(graph: &NCGfa<()>, threads: &usize, gog: & Vec<Vec<u32>>, ggg: &Vec<index_metadata>) -> Vec<(u32, u32)>{
+pub fn bubble_wrapper_highmem(graph: &NCGfa<()>, threads: &usize, gog: & Vec<Vec<u32>>, ggg: &Vec<index_metadata>, pairs_index: &Vec<(usize, usize)>) -> Vec<(u32, u32)>{
 
 
-    // Get all pairs of paths - (n*n-1)/2
-    let f: Vec<usize> = (0..graph.paths.len()).collect();
-    let pairs_index = get_all_pairs(&f);
+
 
     // Number of pairs
     //let pp = pairs_index.len().clone();

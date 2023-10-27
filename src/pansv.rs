@@ -116,7 +116,7 @@ pub fn pansv_index(graph: &NCGfa<()>) -> Vec<u32> {
     res
 }
 
-pub fn pansv(graph: &NCGfa<()>, index: &Vec<u32>){
+pub fn pansv(graph: &NCGfa<()>, index: &Vec<u32>) -> Vec<(u32, u32)>{
     let mut res = HashSet::new();
 
     for x in graph.paths.iter(){
@@ -124,7 +124,7 @@ pub fn pansv(graph: &NCGfa<()>, index: &Vec<u32>){
         let mut last_test = graph.paths.len() as u32;
         let mut last_bub = 0;
         let mut open: Vec<(u32, u32)> = Vec::new();
-        let mut resss: Vec<(u32, usize)> = Vec::new();
+        let mut resss: Vec<(u32, u32)> = Vec::new();
 
 
 
@@ -138,7 +138,7 @@ pub fn pansv(graph: &NCGfa<()>, index: &Vec<u32>){
                 while ii2 < open.len() {
                     if open[ii2].0 <= val {
                         trigger = true;
-                        resss.push((open[ii2].1, ii));
+                        resss.push((open[ii2].1, ii as u32));
                         open.remove(ii2);
                     } else {
                         ii2 += 1;
@@ -146,7 +146,7 @@ pub fn pansv(graph: &NCGfa<()>, index: &Vec<u32>){
                 }
                 if !trigger {
                     if open.len() > 0 {
-                        resss.push((open.last().unwrap().1, ii));
+                        resss.push((open.last().unwrap().1, ii as u32));
                     }
                 }
 
@@ -165,8 +165,8 @@ pub fn pansv(graph: &NCGfa<()>, index: &Vec<u32>){
         res.extend(resss);
 
     }
-
-    println!("{}", res.len());
+    let g = res.iter().cloned().collect::<Vec<_>>();
+    g
 }
 
 
