@@ -1,13 +1,4 @@
-use std::fmt::format;
-// use std::fs::File;
 use std::io::{Write, BufWriter};
-// use std::ptr::write;
-// use std::sync::{Arc, Mutex};
-// use std::thread;
-// use crossbeam_channel::unbounded;
-// use gfa_reader::NCPath;
-// use hashbrown::HashMap;
-// use crate::helper::mean;
 
 
 
@@ -80,19 +71,6 @@ pub fn write_index_intervals2(data: &Vec<[u32;3]>, output: &str){
 }
 
 
-/// Wrapper function for traversal and bubble output files
-///
-/// Writing two files at the same time
-///
-/// Comment:
-/// - Sending data is not needed (maybe replace later)
-pub fn write_wrapper(data:  Vec<&[(usize, u32, u32, u32)]>, index2pos: Vec<Vec<usize>>, paths: Vec<NCPath>, filename_prefix: &str, bubbles: Vec<(u32, u32)>) {
-    // Create the two files
-
-
-    data.par_iter()
-        .map(|n|println!("daskdjhas"));
-}
 
 pub fn stats<'a>(aa: &Vec<(String, Vec<[u32;3]>)>, nc: &'a NCGfa<()>) -> Vec<(usize, usize, &'a [u32], &'a [bool], u32)> {
 

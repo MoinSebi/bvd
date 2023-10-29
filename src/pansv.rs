@@ -20,6 +20,8 @@ pub fn pansv_plus_index(graph: &NCGfa<()>) -> Vec<u128> {
     res
 }
 
+
+
 pub fn pansv_plus(graph: &NCGfa<()>, index: &Vec<u128>, threads: &usize) -> Vec<(u32, u32)>{
 
 
@@ -48,7 +50,6 @@ pub fn pansv_plus_algo(paths: &[NCPath], index: &Vec<u128>) -> Vec<(u32, u32)>{
 
 
         let mut old: Vec<(u128, u32)> = Vec::new();
-        let ii = index2[0] as usize;
 
         let mut before_bits = 0;
         before_bits |= 1 << gg;

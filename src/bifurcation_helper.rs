@@ -1,6 +1,5 @@
 use std::cmp::{max, min};
 use gfa_reader::NCPath;
-use itertools::Chunk;
 
 
 #[derive(Debug)]
@@ -173,6 +172,30 @@ pub fn intersection_two_pointer2<'a>(v1: &'a Vec<( u32,  bool)>, v2: &'a Vec<(u3
     }
     res
 }
+
+pub fn intersection_two_pointer_u32(v1: & Vec<u32>, v2: &Vec<u32>) -> Vec<u32> {
+    let mut res = Vec::with_capacity(v1.len().min(v2.len()));
+    let mut i = 0;
+    let mut j = 0;
+
+    while i < v1.len() && j < v2.len() {
+        if v1[i] == v2[j] {
+            if res.len() == 0{
+                res.push(v1[i]);
+            } else if res.last().unwrap() != &v1[i] {
+                res.push(v1[i]);
+            }
+            i += 1;
+            j += 1;
+        } else if v1[i] < v2[j] {
+            i += 1;
+        } else {
+            j += 1;
+        }
+    }
+    res
+}
+
 
 
 /// Helper function

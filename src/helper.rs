@@ -1,5 +1,4 @@
 use gfa_reader::NCPath;
-use hashbrown::HashMap;
 
 /// Chunks our data set in chunks of similiar size (or close to it) with regards that chunks include complete bubble id
 ///
@@ -132,3 +131,21 @@ pub fn mean(numbers: &Vec<usize>) -> f64 {
     let length = numbers.len() as f64;
     sum as f64 / length
 }
+
+/// **Get all pairs of a vector**
+///
+/// - Only upper "triangle"
+/// - Clones the items
+pub fn get_all_pairs<T>(vector: &Vec<T>) -> Vec<(T,T)>
+    where T: Clone{
+    let mut pairs: Vec<(T, T)> = Vec::new();
+    let mut count = 0;
+    for item1 in vector.iter(){
+        for item2 in vector[count+1..].iter(){
+            pairs.push((item1.clone(), item2.clone()));
+        }
+        count += 1;
+    }
+    pairs
+}
+

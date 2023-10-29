@@ -1,10 +1,8 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
 use criterion::{criterion_group, criterion_main, Criterion};
-use gfa_reader::{NCGfa, NCPath, OptFields};
+use gfa_reader::{NCGfa, OptFields};
 use hashbrown::{HashMap, HashSet};
 use itertools::Itertools;
-use predicates::ord::ge;
 
 pub mod bench_index;
 use crate::bench_index::{index_btree, index_hashmap, index_index, index_meta, path2combi};
@@ -150,9 +148,6 @@ fn criterion_benchmark(c: &mut Criterion) {
 
 
 
-
-    let get_sample1 = random_sample_nosort(&data);
-    let get_sample2 = random_sample(&data);
 
     let hashmap_index = index_hashmap(&data);
     let hashmap_index2 = index_hashmap(&data2);
