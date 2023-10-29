@@ -155,6 +155,8 @@ fn main() {
             process::exit(0x0100);
         }
     }
+    info!("BVD: Number of paths {}", graph.paths.len());
+    info!("BVD: Number of pairs {}", (pairs_index.len()));
 
 
 
@@ -212,8 +214,7 @@ fn main() {
             pair_list_filter(&mut pairs_index, &st, &graph);
         }
 
-        info!("BVD: Number of paths {}", graph.paths.len());
-        info!("BVD: Number of pairs {}", (pairs_index.len()));
+
 
 
         // Bifurcation functions
