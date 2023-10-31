@@ -155,8 +155,7 @@ fn main() {
             process::exit(0x0100);
         }
     }
-    info!("BVD: Number of paths {}", graph.paths.len());
-    info!("BVD: Number of pairs {}", (pairs_index.len()));
+
 
 
 
@@ -181,6 +180,7 @@ fn main() {
     let mut wrapper: GraphWrapper<NCPath> = GraphWrapper::new();
     wrapper.from_gfa(&graph.paths, " ");
 
+    info!("BVD: Number of paths {}", graph.paths.len());
 
     let bubbles: Vec<(u32, u32)> ;
     if pansvp_flag || pansv_flag {
@@ -198,6 +198,7 @@ fn main() {
         // All pairs
         let f: Vec<usize> = (0..graph.paths.len()).collect();
         let mut pairs_index = get_all_pairs(&f);
+        info!("BVD: Number of pairs {}", (pairs_index.len()));
 
         // Remove some
         if reference != "all" {
