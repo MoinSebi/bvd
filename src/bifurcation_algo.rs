@@ -192,41 +192,42 @@ fn detect_bubbles_hm(chunk: &[(usize, usize)], gog: &Vec<index_metadata>, ggg: &
 
 
         let mut shared_index = intersect_index(path1_combination, path2_combination, &gog[pair.0], &gog[pair.1]);
-        let elapsed = start.elapsed();
-        trace!("Time to intersect: {:?}", elapsed);
+        if shared_index.len() > 1{
+            let elapsed = start.elapsed();
+            trace!("Time to intersect: {:?}", elapsed);
 
 
 
 
 
-        let mut result = bifurcation_sort_hold(&shared_index);
-        let elapsed = start.elapsed();
-        trace!("Time to bifurcation1: {:?}", elapsed);
+            let mut result = bifurcation_sort_hold(&shared_index);
+            let elapsed = start.elapsed();
+            trace!("Time to bifurcation1: {:?}", elapsed);
 
-        for arr in &mut shared_index {
-            // Check if the array has at least two elements
-            // Swaps the first and second elements in the array
-            arr.swap(0, 1);
+            for arr in &mut shared_index {
+                // Check if the array has at least two elements
+                // Swaps the first and second elements in the array
+                arr.swap(0, 1);
+            }
+            let elapsed = start.elapsed();
+            trace!("Time to switch: {:?}", elapsed);
+            shared_index.sort_by(|a, b| (a[0].cmp(&b[0]).then(a[1].cmp(&b[1]))));
+            let elapsed = start.elapsed();
+            trace!("Time to sort: {:?}", elapsed);
+
+            result.extend(bifurcation_sort_hold(&shared_index));
+            let elapsed = start.elapsed();
+            trace!("Time to bifurcation2: {:?}", elapsed);
+
+
+            let f: HashSet<(u32, u32)> = HashSet::from_iter(result.iter().cloned());
+
+            //let result = Vec::new();
+
+            bubbles.extend(f);
+            let elapsed = start.elapsed();
+            trace!("Time to hashset: {:?}", elapsed);
         }
-        let elapsed = start.elapsed();
-        trace!("Time to switch: {:?}", elapsed);
-        shared_index.sort_by(|a, b| (a[0].cmp(&b[0]).then(a[1].cmp(&b[1]))));
-        let elapsed = start.elapsed();
-        trace!("Time to sort: {:?}", elapsed);
-
-        result.extend(bifurcation_sort_hold(&shared_index));
-        let elapsed = start.elapsed();
-        trace!("Time to bifurcation2: {:?}", elapsed);
-
-
-        let f: HashSet<(u32, u32)> = HashSet::from_iter(result.iter().cloned());
-
-        //let result = Vec::new();
-
-        bubbles.extend(f);
-        let elapsed = start.elapsed();
-        trace!("Time to hashset: {:?}", elapsed);
-
     }
 
     bubbles
