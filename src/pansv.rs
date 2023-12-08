@@ -125,6 +125,20 @@ pub fn pansv_index(graph: &NCGfa<()>) -> Vec<u32> {
     for (i, x) in graph.paths.iter().enumerate() {
         let index = path2nodedir(&x);
         let index: HashSet<u32> = index.into_iter().collect();
+        println!("{}", index.len());
+
+        for y in index.iter() {
+            res[*y as usize] += 1
+        }
+    }
+    res
+}
+
+pub fn pansv_index2(graph: &NCGfa<()>) -> Vec<u32> {
+    let mut res = vec![0; graph.nodes.len()*2 + 2];
+    for (i, x) in graph.paths.iter().enumerate() {
+        let index = path2nodedir(&x);
+        println!("{}", index.len());
         for y in index.iter() {
             res[*y as usize] += 1
         }
@@ -148,6 +162,9 @@ pub fn pansv(graph: &NCGfa<()>, index: &Vec<u32>, threads: &usize) -> Vec<(u32, 
     let g = g.iter().cloned().collect::<Vec<_>>();
     g
 }
+
+
+
 
 pub fn pansv_algo(paths: &Vec<NCPath>, index: &Vec<u32>) -> Vec<(u32, u32)> {
     let mut res = HashSet::new();

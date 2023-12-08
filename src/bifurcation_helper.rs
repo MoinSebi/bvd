@@ -2,7 +2,7 @@ use std::cmp::{max, min};
 use gfa_reader::NCPath;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct index_metadata {
     pub index: Vec<u32>,
     pub from_to: Vec<(u32, u32)>,
@@ -13,7 +13,15 @@ impl index_metadata {
     pub fn get(&self, num: &u32) -> &[u32]{
 
         let (start, end) = self.from_to[*num as usize - self.min_val as usize];
+        if start >= end{
+            return &[]
+        }
         return &self.index[start as usize..end as usize]
+    }
+
+    pub fn get_index_mut(&mut self, num: &u32) -> &mut (u32, u32){
+
+            return &mut self.from_to[*num as usize - self.min_val as usize]
     }
 
     pub fn new() -> index_metadata {

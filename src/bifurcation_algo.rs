@@ -195,6 +195,8 @@ fn detect_bubbles_hm(chunk: &[(usize, usize)], gog: &Vec<index_metadata>, ggg: &
         if shared_index.len() > 1{
             let elapsed = start.elapsed();
             trace!("Time to intersect: {:?}", elapsed);
+            trace!("Shared index len {:?}", shared_index.len());
+
 
 
 
@@ -256,10 +258,14 @@ pub fn intersect_index(vec1: & Vec<u32>, vec2: & Vec<u32>, aa: &index_metadata, 
     shared_nodes.iter().for_each(|x|{
         let g1 = aa.get(x);
         let g2 = aa2.get(x);
-        if g1.len() == 1 && g2.len() == 1{
-            result2.push([g1[0], g2[0], *x]);
+        if g1.len() > 10 && g2.len() > 10{
+            return
         } else {
-            result2.extend(combinations2D(g1, g2, x));
+            if g1.len() == 1 && g2.len() == 1 {
+                result2.push([g1[0], g2[0], *x]);
+            } else {
+                result2.extend(combinations2D(g1, g2, x));
+            }
         }
 
     });

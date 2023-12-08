@@ -5,10 +5,11 @@ use clap::{Arg, App, AppSettings};
 use gfa_reader::{GraphWrapper, NCGfa, NCPath};
 use log::{debug, info, warn};
 use bvd::bifurcation_algo::{bubble_wrapper, bubble_wrapper_highmem, bvd_total, index_wrapper, };
+use bvd::gfa2paf::iter_dict;
 use bvd::graph_helper::{pairs_reference, pair_list_filter, parse_pair_file, split_string};
 use bvd::helper::get_all_pairs;
 use bvd::logging::newbuilder;
-use bvd::pansv::{pansv_index, pansv, pansv_plus_index, pansv_plus};
+use bvd::pansv::{pansv_index, pansv, pansv_plus_index, pansv_plus, pansv_index2};
 use bvd::writer::{write_bubbles, write_index_intervals};
 
 
@@ -66,6 +67,10 @@ fn main() {
         .arg(Arg::new("panSV plus")
             .long("pansv-plus")
             .about("Run panSV plus algorithm [default: off]")
+        )
+        .arg(Arg::new("gfa2paf")
+            .long("gfa2paf")
+            .about("Run gfa2paf algorithm [default: off]")
         )
 
 
@@ -141,6 +146,7 @@ fn main() {
     let pair_list = matches.value_of("Pair list").unwrap_or("all");
     let pansv_flag = matches.is_present("panSV");
     let pansvp_flag = matches.is_present("panSV plus");
+    let gfa2paf = matches.is_present("gfa2paf");
 
 
 
@@ -186,7 +192,9 @@ fn main() {
     if pansvp_flag || pansv_flag {
 
         if pansvp_flag {
-            let index = pansv_index(&graph);
+            let index = pansv_index2(&graph);
+            //let index = pansv_index(&graph);
+
             bubbles = pansv(&graph, &index, &threads);
         } else {
             let index = pansv_plus_index(&graph);
@@ -214,25 +222,35 @@ fn main() {
             let st = parse_pair_file(pair_list);
             pair_list_filter(&mut pairs_index, &st, &graph);
         }
+        if gfa2paf{
+            let mut graph: NCGfa<()> = NCGfa::new();
+            graph.parse_gfa_file_direct("data/example_data/chr1.sort.small.gfa", false);
+            //graph.parse_gfa_file_direct("data/example_data/size5.run4.fasta.gz.f1fd09c.417fcdf.b3523fd.smooth.final.gfa", false);
 
-
-
-
-        // Bifurcation functions
-
-        // You recalculate the node2index every time
-        if matches.is_present("low-memory") {
-            info!("BVD: Running in low mem mode (low-memory)");
-            bubbles = bubble_wrapper(&graph, &threads, &pairs_index);
+            let f: Vec<usize> = (0..graph.paths.len()).collect();
+            println!("{}", graph.nodes.len());
+            println!("{}", graph.paths.len());
+            let mut pairs_index = get_all_pairs(&f);
+            bubbles = iter_dict(&graph, &1, &pairs_index);
         } else {
-            info!("BVD: Create index");
-            let (path_merges, index) = index_wrapper(&graph);
-            info!("BVD: Identify bubbles");
-            let start = Instant::now();
 
-            bubbles = bubble_wrapper_highmem(&graph, &threads, &path_merges, &index, &pairs_index);
-            let end = start.elapsed();
-            debug!("BVD: Bubble detection time: {:?}", end);
+
+            // Bifurcation functions
+
+            // You recalculate the node2index every time
+            if matches.is_present("low-memory") {
+                info!("BVD: Running in low mem mode (low-memory)");
+                bubbles = bubble_wrapper(&graph, &threads, &pairs_index);
+            } else {
+                info!("BVD: Create index");
+                let (path_merges, index) = index_wrapper(&graph);
+                info!("BVD: Identify bubbles");
+                let start = Instant::now();
+
+                bubbles = bubble_wrapper_highmem(&graph, &threads, &path_merges, &index, &pairs_index);
+                let end = start.elapsed();
+                debug!("BVD: Bubble detection time: {:?}", end);
+            }
         }
     }
 

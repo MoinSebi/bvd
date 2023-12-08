@@ -6,3 +6,4 @@ pub mod graph_helper;
 pub mod bifurcation_helper;
 pub mod relation;
 pub mod pansv;
+pub mod gfa2paf;
