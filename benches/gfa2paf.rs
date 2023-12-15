@@ -8,7 +8,7 @@ use nohash_hasher::NoHashHasher;
 use bvd::bifurcation_algo::index_wrapper;
 use bvd::bifurcation_helper::{IndexMetadata, intersection_two_pointer_u32};
 use bvd::writer::gfapos_wrapper;
-use bvd::gfa2paf::{gfa2paf_h, gfa2paf_h2, gfa2paf_og, iter_dict};
+use bvd::gfa2paf::{gfa2paf_h, gfa2paf_h2, iter_dict};
 use bvd::helper::get_all_pairs;
 use std::collections::HashSet;
 
