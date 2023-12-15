@@ -33,6 +33,7 @@ pub fn iter_dict(graph: &NCGfa<()>, threads: &usize, pairs_index: &Vec<(usize, u
     }
     chunk_size = min(500, chunk_size);
 
+    info!("BVD: Chunk size {}", chunk_size);
     let (path_merges, index) = index_wrapper(&graph);
     let pp: Vec<_> = path_merges.iter().map(|s| s.iter().cloned().collect::<HashSet<u32>>()).collect();
 

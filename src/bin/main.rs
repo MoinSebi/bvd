@@ -213,12 +213,7 @@ fn main() {
             pair_list_filter(&mut pairs_index, &st, &graph);
         }
         if gfa2paf{
-            let mut graph: NCGfa<()> = NCGfa::new();
-            graph.parse_gfa_file_direct("data/example_data/chr1.sort.small.gfa", false);
-            //graph.parse_gfa_file_direct("data/example_data/size5.run4.fasta.gz.f1fd09c.417fcdf.b3523fd.smooth.final.gfa", false);
 
-            let f: Vec<usize> = (0..graph.paths.len()).collect();
-            let pairs_index = get_all_pairs(&f);
             bubbles = iter_dict(&graph, &1, &pairs_index);
         } else {
 
