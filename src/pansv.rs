@@ -1,9 +1,8 @@
-use std::cmp::max;
+use std::cmp::{max, min};
 use gfa_reader::{NCGfa, NCPath};
 use hashbrown::HashSet;
 use log::info;
 use rayon::prelude::*;
-use crate::bifurcation_algo::index_wrapper;
 use crate::bifurcation_helper::{path2combi2, path2nodedir};
 
 
@@ -25,13 +24,15 @@ pub fn pansv_plus_index(graph: &NCGfa<()>) -> Vec<u128> {
 pub fn pansv_plus(graph: &NCGfa<()>, index: &Vec<u128>, threads: &usize) -> Vec<(u32, u32)>{
 
 
-    let mut chunk_size = 0;
+    let mut chunk_size ;
     if graph.paths.len() % *threads != 0{
         chunk_size = (graph.paths.len() / *threads)  + 1
 
     } else {
-        chunk_size = max(1, (graph.paths.len() / *threads))
+        chunk_size = max(1, graph.paths.len() / *threads)
     }
+    chunk_size = min(500, chunk_size);
+
     info!("BVD: Chunk size {}", chunk_size);
     let a = graph.paths.par_chunks(chunk_size).map(|x| pansv_plus_algo(&x, &index)).flatten().collect::<Vec<_>>();
     let g = a.iter().cloned().collect::<HashSet<_>>();
@@ -122,7 +123,7 @@ pub fn pansv_plus_algo(paths: &[NCPath], index: &Vec<u128>) -> Vec<(u32, u32)>{
 
 pub fn pansv_index(graph: &NCGfa<()>) -> Vec<u32> {
     let mut res = vec![0; graph.nodes.len()*2 + 2];
-    for (i, x) in graph.paths.iter().enumerate() {
+    for (_i, x) in graph.paths.iter().enumerate() {
         let index = path2nodedir(&x);
         let index: HashSet<u32> = index.into_iter().collect();
         println!("{}", index.len());
@@ -136,7 +137,7 @@ pub fn pansv_index(graph: &NCGfa<()>) -> Vec<u32> {
 
 pub fn pansv_index2(graph: &NCGfa<()>) -> Vec<u32> {
     let mut res = vec![0; graph.nodes.len()*2 + 2];
-    for (i, x) in graph.paths.iter().enumerate() {
+    for (_i, x) in graph.paths.iter().enumerate() {
         let index = path2nodedir(&x);
         println!("{}", index.len());
         for y in index.iter() {
@@ -148,13 +149,15 @@ pub fn pansv_index2(graph: &NCGfa<()>) -> Vec<u32> {
 
 pub fn pansv(graph: &NCGfa<()>, index: &Vec<u32>, threads: &usize) -> Vec<(u32, u32)>{
 
-    let mut chunk_size = 0;
+    let mut chunk_size;
     if graph.paths.len() % *threads != 0{
         chunk_size = (graph.paths.len() / *threads)  + 1
 
     } else {
-        chunk_size = max(1, (graph.paths.len() / *threads))
+        chunk_size = max(1, graph.paths.len() / *threads)
     }
+    chunk_size = min(500, chunk_size);
+
     info!("BVD: Chunk size {}", chunk_size);
 
     let a = graph.paths.par_chunks(chunk_size).map(|x| pansv_algo(&x.to_vec(), &index)).flatten().collect::<Vec<_>>();

@@ -1,14 +1,13 @@
 use std::cmp::{max, min};
 use std::collections::{ HashSet};
-use std::hash::Hash;
 use std::iter::FromIterator;
 use std::time::Instant;
-use bifurcation::{bifurcation_meta, bifurcation_sort_hold};
+use bifurcation::{bifurcation_sort_hold};
 use rayon::prelude::*;
 
 use gfa_reader::{NCGfa, NCPath};
 use log::{info, trace};
-use crate::bifurcation_helper::{all_combinations, all_combinations_self, index_meta, index_metadata, intersection_two_pointer, intersection_two_pointer_u32, path2combi, path2nodedir};
+use crate::bifurcation_helper::{all_combinations, all_combinations_self, index_meta, IndexMetadata, intersection_two_pointer_u32, path2combi, path2nodedir};
 
 
 
@@ -31,14 +30,13 @@ pub fn bubble_wrapper(graph: &NCGfa<()>, threads: &usize, pairs_index: &Vec<(usi
         .build()
         .unwrap();
 
-    let mut chunk_size = 0;
+    let mut chunk_size;
     if graph.paths.len() % *threads != 0{
-        chunk_size = ((pairs_index.len() / *threads))  + 1
+        chunk_size = (pairs_index.len() / *threads)  + 1
 
     } else {
-        chunk_size = max(1, (pairs_index.len() / *threads))
+        chunk_size = max(1, pairs_index.len() / *threads)
     }
-    chunk_size = ((pairs_index.len() / *threads) /5)  + 1;
     chunk_size = min(500, chunk_size);
     info!("BVD: Chunk size {}", chunk_size);
 
@@ -76,10 +74,10 @@ fn detect_bubbles(chunk: &[(usize, usize)], graph: &NCGfa<()>) -> HashSet<(u32, 
         // Get the index
         let mut path1_combination = path2nodedir(path1);
         let mut path2_combination = path2nodedir(path2);
-        let mut aa = index_metadata::new();
-        aa.from_path(&path1_combination);
-        let mut aa2 = index_metadata::new();
-        aa2.from_path(&path2_combination);
+        let mut aa = IndexMetadata::new();
+        aa.parse_path(&path1_combination);
+        let mut aa2 = IndexMetadata::new();
+        aa2.parse_path(&path2_combination);
         path1_combination.sort();
         path2_combination.sort();
         let mut shared_index = intersect_index(&mut path1_combination, &mut path2_combination, &aa, &aa2);
@@ -112,13 +110,13 @@ fn detect_bubbles(chunk: &[(usize, usize)], graph: &NCGfa<()>) -> HashSet<(u32, 
 //-------------------------------------------------------------------------HIGHMEM-------------------------------------------------------------
 
 /// Create all the index needed
-pub fn index_wrapper(graph: &NCGfa<()>) -> (Vec<Vec<u32>>, Vec<index_metadata>){
+pub fn index_wrapper(graph: &NCGfa<()>) -> (Vec<Vec<u32>>, Vec<IndexMetadata>){
     let mut index_index = Vec::new();
     let mut index_struct = Vec::new();
     for path in graph.paths.iter(){
         let mut path1_combination = path2nodedir(path);
-        let mut index = index_metadata::new();
-        index.from_path(&path1_combination);
+        let mut index = IndexMetadata::new();
+        index.parse_path(&path1_combination);
         path1_combination.sort();
 
         index_index.push(path1_combination);
@@ -130,7 +128,7 @@ pub fn index_wrapper(graph: &NCGfa<()>) -> (Vec<Vec<u32>>, Vec<index_metadata>){
 
 /// Get all bubbles in the graph
 ///
-pub fn bubble_wrapper_highmem(graph: &NCGfa<()>, threads: &usize, index_vec: & Vec<Vec<u32>>, index_wrapper: &Vec<index_metadata>, pairs_index: &Vec<(usize, usize)>) -> Vec<(u32, u32)>{
+pub fn bubble_wrapper_highmem(graph: &NCGfa<()>, threads: &usize, index_vec: & Vec<Vec<u32>>, index_wrapper: &Vec<IndexMetadata>, pairs_index: &Vec<(usize, usize)>) -> Vec<(u32, u32)>{
 
 
 
@@ -140,14 +138,13 @@ pub fn bubble_wrapper_highmem(graph: &NCGfa<()>, threads: &usize, index_vec: & V
         .unwrap();
 
     // Chunk size computation
-    let mut chunk_size = 0;
+    let mut chunk_size ;
     if graph.paths.len() % *threads != 0{
         chunk_size = ((pairs_index.len() / *threads))  + 1
 
     } else {
-        chunk_size = max(1, (pairs_index.len() / *threads))
+        chunk_size = max(1, pairs_index.len() / *threads)
     }
-    chunk_size = ((pairs_index.len() / *threads) /5)  + 1;
     chunk_size = min(500, chunk_size);
     info!("BVD: Chunk size {}", chunk_size);
 
@@ -177,7 +174,7 @@ pub fn bubble_wrapper_highmem(graph: &NCGfa<()>, threads: &usize, index_vec: & V
 }
 
 /// Detect bubbles
-fn detect_bubbles_hm(chunk: &[(usize, usize)], gog: &Vec<index_metadata>, ggg: &Vec<Vec<u32>>) -> HashSet<(u32, u32)>{
+fn detect_bubbles_hm(chunk: &[(usize, usize)], gog: &Vec<IndexMetadata>, ggg: &Vec<Vec<u32>>) -> HashSet<(u32, u32)>{
     let mut bubbles = HashSet::new();
     for pair in chunk.iter(){
 
@@ -242,12 +239,12 @@ fn detect_bubbles_hm(chunk: &[(usize, usize)], gog: &Vec<index_metadata>, ggg: &
 
 
 
-pub fn intersect_index(vec1: & Vec<u32>, vec2: & Vec<u32>, aa: &index_metadata, aa2: &index_metadata) -> Vec<[u32; 3]>{
+pub fn intersect_index(vec1: & Vec<u32>, vec2: & Vec<u32>, aa: &IndexMetadata, aa2: &IndexMetadata) -> Vec<[u32; 3]>{
 
 
 
     // Intersection
-    let mut shared_nodes = intersection_two_pointer_u32(&vec1, &vec2);
+    let shared_nodes = intersection_two_pointer_u32(&vec1, &vec2);
 
 
 
@@ -264,7 +261,7 @@ pub fn intersect_index(vec1: & Vec<u32>, vec2: & Vec<u32>, aa: &index_metadata, 
             if g1.len() == 1 && g2.len() == 1 {
                 result2.push([g1[0], g2[0], *x]);
             } else {
-                result2.extend(combinations2D(g1, g2, x));
+                result2.extend(combinations2d(g1, g2, x));
             }
         }
 
@@ -280,7 +277,7 @@ pub fn intersect_index(vec1: & Vec<u32>, vec2: & Vec<u32>, aa: &index_metadata, 
 
 
 
-pub fn combinations2D<T>(vec1: &[T], vec2: &[T], node_id: &T) -> Vec<[T; 3]>
+pub fn combinations2d<T>(vec1: &[T], vec2: &[T], node_id: &T) -> Vec<[T; 3]>
     where T: Copy{
     {
         // let all_combinations: Vec<[T; 3]> = a.iter().flat_map(| x| {
@@ -309,12 +306,12 @@ pub fn bvd_total(graph: &NCGfa<()>, threads: &usize, bubble: &Vec<(u32, u32)>) -
         .build()
         .unwrap();
 
-    let mut chunk_size = 0;
+    let chunk_size ;
     if graph.paths.len() % *threads != 0{
         chunk_size = (graph.paths.len() / *threads)  + 1
 
     } else {
-        chunk_size = max(1, (graph.paths.len() / *threads))
+        chunk_size = max(1, graph.paths.len() / *threads)
     }
     info!("BVD: Chunk size {}", chunk_size);
 

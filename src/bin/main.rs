@@ -9,7 +9,7 @@ use bvd::gfa2paf::iter_dict;
 use bvd::graph_helper::{pairs_reference, pair_list_filter, parse_pair_file, split_string};
 use bvd::helper::get_all_pairs;
 use bvd::logging::newbuilder;
-use bvd::pansv::{pansv_index, pansv, pansv_plus_index, pansv_plus, pansv_index2};
+use bvd::pansv::{pansv, pansv_plus_index, pansv_plus, pansv_index2};
 use bvd::writer::{write_bubbles, write_index_intervals};
 
 
@@ -97,16 +97,6 @@ fn main() {
             .about("Test1")
             .hidden(true))
 
-
-
-
-        // .arg(Arg::new("Structure")
-        //     .long("structure")
-        //     .short('s')
-        //     .about("Report the structure/relationship of the bubbles to each other"))
-        // .arg(Arg::new("Nestedness")
-        //     .long("nestedness")
-        //     .about("Adds NL-tag (nestedness-level) to the stats output file - only working when --structure is provided [default: off]"))
 
         .help_heading("Computational resources")
         .arg(Arg::new("threads")
@@ -228,9 +218,7 @@ fn main() {
             //graph.parse_gfa_file_direct("data/example_data/size5.run4.fasta.gz.f1fd09c.417fcdf.b3523fd.smooth.final.gfa", false);
 
             let f: Vec<usize> = (0..graph.paths.len()).collect();
-            println!("{}", graph.nodes.len());
-            println!("{}", graph.paths.len());
-            let mut pairs_index = get_all_pairs(&f);
+            let pairs_index = get_all_pairs(&f);
             bubbles = iter_dict(&graph, &1, &pairs_index);
         } else {
 

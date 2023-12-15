@@ -17,7 +17,7 @@ use gfa_reader::NCPath;
 /// let mut f = vec![(1,2,3,4), (2,3,4,5), (4,5,6,7), (10,12,12,11)];
 /// let f2 = chunk_by_index(&mut f, 4, 2);
 /// ```
-pub fn chunk_by_index(mut input:  &mut Vec<(usize, u32, u32, u32)>, bubble_numb: u32, number_chunks: u32) -> Vec<&[(usize, u32, u32, u32)]> {
+pub fn chunk_by_index(input:  &mut Vec<(usize, u32, u32, u32)>, bubble_numb: u32, number_chunks: u32) -> Vec<&[(usize, u32, u32, u32)]> {
     // Sort by bubble_id
     input.sort_by_key(|a| (a.3));
 
@@ -47,7 +47,7 @@ pub fn chunk_by_index(mut input:  &mut Vec<(usize, u32, u32, u32)>, bubble_numb:
     vec_new
 }
 
-pub fn chunk_by_index2(mut input:  &mut Vec<(usize, u32, u32, u32)>, bubble_numb: u32, number_chunks: u32) -> Vec<&[(usize, u32, u32, u32)]> {
+pub fn chunk_by_index2(input:  &mut Vec<(usize, u32, u32, u32)>, bubble_numb: u32, number_chunks: u32) -> Vec<&[(usize, u32, u32, u32)]> {
     // Sort by bubble_id
     input.sort_by_key(|a| (a.3));
 
@@ -103,7 +103,7 @@ pub fn chunk_inplace<T>(it: Vec<T>, numb: usize) -> Vec<Vec<T>>{
 }
 
 
-pub fn getSlice_test<'a>(data: &mut Vec<(usize, u32, u32, u32)>, path: &'a NCPath, index2: &Vec<usize>) -> Vec<(&'a [u32], &'a [bool])>{
+pub fn get_slice_test<'a>(data: &mut Vec<(usize, u32, u32, u32)>, path: &'a NCPath, index2: &Vec<usize>) -> Vec<(&'a [u32], &'a [bool])>{
     let mut slices = Vec::new();
     let mut hellper = Vec::new();
     for interval in data{

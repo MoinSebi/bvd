@@ -19,7 +19,7 @@ pub fn get_relations(input: &Vec<(String, Vec<[u32;3]>)>, threads: &usize) -> Ha
 
 pub fn process1(input: &[(String, Vec<[u32;3]>)]) -> HashSet<(u32, u32)>{
     let mut result = HashSet::new();
-    for mut x in input.iter(){
+    for x in input.iter(){
         println!("DONE");
         result.extend(make_nested(&x.1));
     }

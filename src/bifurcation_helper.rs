@@ -3,13 +3,13 @@ use gfa_reader::NCPath;
 
 
 #[derive(Debug, Clone)]
-pub struct index_metadata {
+pub struct IndexMetadata {
     pub index: Vec<u32>,
     pub from_to: Vec<(u32, u32)>,
     pub min_val: u32,
 }
 
-impl index_metadata {
+impl IndexMetadata {
     pub fn get(&self, num: &u32) -> &[u32]{
 
         let (start, end) = self.from_to[*num as usize - self.min_val as usize];
@@ -24,8 +24,8 @@ impl index_metadata {
             return &mut self.from_to[*num as usize - self.min_val as usize]
     }
 
-    pub fn new() -> index_metadata {
-        index_metadata {
+    pub fn new() -> IndexMetadata {
+        IndexMetadata {
             index: Vec::new(),
             from_to: Vec::new(),
             min_val: 0,
@@ -34,7 +34,7 @@ impl index_metadata {
 
 
 
-    pub fn from_path(&mut self, path: & Vec<u32>){
+    pub fn parse_path(&mut self, path: & Vec<u32>){
 
         // Create a vector of the nodes
 
@@ -44,10 +44,10 @@ impl index_metadata {
         // Sort by node
         result_vector.sort();
         // Max val
-        let mut max_val = result_vector.last().unwrap().0;
+        let max_val = result_vector.last().unwrap().0;
 
         // Min val
-        let mut min_val = result_vector.first().unwrap().0;
+        let min_val = result_vector.first().unwrap().0;
         self.min_val = min_val - 1;
 
 
@@ -61,7 +61,7 @@ impl index_metadata {
         let mut from_to = vec![(0, 0); *max_val as usize + 1 - self.min_val as usize];
 
 
-        let mut index = 0;
+        let mut index;
         // These are all the nodes
         for (index_enumerate, dir_nodex) in result_vector.iter().enumerate(){
             // if it is not the same than the last value, add it to the list
@@ -84,9 +84,8 @@ impl index_metadata {
     }
 }
 
-pub fn index_meta<'a, 'b>(path: &'b Vec<(&'a u32, &'a bool)>) -> (Vec<(u32)>, Vec<(u32, u32)>){
+pub fn index_meta<'a, 'b>(path: &'b Vec<(&'a u32, &'a bool)>) -> (Vec<u32>, Vec<(u32, u32)>){
 
-    /// Create a vector of the nodes
     let mut result_vector = Vec::with_capacity(path.len());
 
 
@@ -211,14 +210,14 @@ pub fn intersection_two_pointer_u32(v1: & Vec<u32>, v2: &Vec<u32>) -> Vec<u32> {
 /// Concatenate the node and the direction of the path
 pub fn path2combi(path: &NCPath) -> Vec<(&u32, &bool)>{
     //let mut ff = Vec::with_capacity(path.nodes.len());
-    let mut ff: Vec<(&u32, &bool)> = path.nodes.iter().zip(path.dir.iter()).collect();
+    let ff: Vec<(&u32, &bool)> = path.nodes.iter().zip(path.dir.iter()).collect();
     ff
 
 }
 
 pub fn path2combi2(path: &NCPath) -> Vec<(u32, bool)>{
     //let mut ff = Vec::with_capacity(path.nodes.len());
-    let mut ff: Vec<(u32, bool)> = path.nodes.iter().cloned().zip(path.dir.iter().cloned()).collect();
+    let ff: Vec<(u32, bool)> = path.nodes.iter().cloned().zip(path.dir.iter().cloned()).collect();
     ff
 
 }
